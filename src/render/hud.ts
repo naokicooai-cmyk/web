@@ -89,25 +89,54 @@ function drawMinimap(
   ctx.fill();
 }
 
+function roundedBar(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  ratio: number,
+  from: string,
+  to: string,
+): void {
+  ctx.fillStyle = 'rgba(4, 6, 16, 0.75)';
+  ctx.beginPath();
+  ctx.roundRect(x - 1, y - 1, w + 2, h + 2, h / 2 + 1);
+  ctx.fill();
+  if (ratio > 0.01) {
+    const grad = ctx.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, from);
+    grad.addColorStop(1, to);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w * Math.min(1, ratio), h, h / 2);
+    ctx.fill();
+    // 上面ハイライト
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.beginPath();
+    ctx.roundRect(x + 2, y + 1, Math.max(0, w * Math.min(1, ratio) - 4), h * 0.32, h * 0.16);
+    ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x - 1, y - 1, w + 2, h + 2, h / 2 + 1);
+  ctx.stroke();
+}
+
 function drawBars(state: GameState, ctx: CanvasRenderingContext2D, w: number, h: number): void {
   const p = state.player;
   const bw = Math.min(420, w - 240);
   const x = (w - bw) / 2;
 
   // XPバー
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(x, h - 30, bw, 8);
-  ctx.fillStyle = '#7df9ff';
-  ctx.fillRect(x, h - 30, bw * Math.min(1, p.xp / p.xpNext), 8);
+  roundedBar(ctx, x, h - 30, bw, 8, p.xp / p.xpNext, '#aefcff', '#36a8c4');
 
   // HPバー
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(x, h - 48, bw, 14);
   const hpRatio = p.hp / p.maxHp;
-  ctx.fillStyle = hpRatio > 0.5 ? '#5aff8c' : hpRatio > 0.25 ? '#ffd24d' : '#ff5470';
-  ctx.fillRect(x, h - 48, bw * Math.max(0, hpRatio), 14);
-  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-  ctx.strokeRect(x, h - 48, bw, 14);
+  const hpColors: [string, string] =
+    hpRatio > 0.5 ? ['#8cffb4', '#1fa85a'] : hpRatio > 0.25 ? ['#ffe28c', '#c49a1f'] : ['#ff8ca0', '#c41f3e'];
+  roundedBar(ctx, x, h - 48, bw, 14, hpRatio, hpColors[0], hpColors[1]);
 
   ctx.textAlign = 'center';
   ctx.font = 'bold 12px sans-serif';
@@ -191,7 +220,9 @@ function drawSkill(state: GameState, ctx: CanvasRenderingContext2D, w: number, h
     ctx.closePath();
     ctx.fill();
   } else {
-    ctx.fillStyle = 'rgba(125, 249, 255, 0.35)';
+    // 発動可能：パルスする光で「押せ」と伝える
+    const pulse = 0.3 + (Math.sin(state.time * 5) * 0.5 + 0.5) * 0.2;
+    ctx.fillStyle = `rgba(125, 249, 255, ${pulse})`;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();

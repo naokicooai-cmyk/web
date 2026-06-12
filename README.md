@@ -32,6 +32,8 @@ npm run preview  # dist/ の確認用サーバー
 npm run preview -- --port 4173 --strictPort &
 node scripts/smoke.mjs           # 起動〜序盤プレイの検証＋スクリーンショット
 node scripts/smoke-lategame.mjs  # 時間ジャンプでボス・霧・コロッサス・リザルト検証
+node scripts/capture.mjs         # 濃い戦闘シーンのビジュアル確認（canvas直キャプチャ）
+node scripts/fpscheck.mjs        # 戦闘負荷時のFPS計測
 ```
 
 ## アーキテクチャ
@@ -40,6 +42,8 @@ node scripts/smoke-lategame.mjs  # 時間ジャンプでボス・霧・コロッ
 - 当たり判定は**全エンティティ円**（`distSq` のみ、平方根なし）＋**空間ハッシュ**（128pxグリッド）
 - 弾・敵・ジェム・パーティクルは**オブジェクトプール**で管理（GCスパイク防止）
 - 敵の見た目は**オフスクリーンcanvasスプライトキャッシュ**＋画面外カリング
+- グロー表現は `shadowBlur` を使わず**事前描画した光暈スプライト＋加算合成**（高速）
+- 背景はネビュラ＋パララックス2層の浮遊塵＋ビネット（すべて手続き生成、画像アセットゼロ）
 - 効果音は WebAudio 直叩きの軽量シンセ（外部アセットゼロ）
 
 ```

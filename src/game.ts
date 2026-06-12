@@ -12,7 +12,7 @@ import { updateGems } from './entities/gem';
 import { updatePickups } from './entities/pickup';
 import { createPlayer, recomputeMods, updatePlayerMovement } from './entities/player';
 import { renderHud } from './render/hud';
-import { renderWorld } from './render/renderer';
+import { renderAmbient, renderWorld } from './render/renderer';
 import { resolveCollisions } from './systems/collision';
 import { updateFog } from './systems/fog';
 import { applyCard, evolutionChoices, generateDraft, type DraftCard } from './systems/levelUp';
@@ -283,8 +283,12 @@ export class Game {
   render(): void {
     const s = this.state;
     if (s.mode === 'title') {
-      this.ctx.fillStyle = '#0a0a14';
-      this.ctx.fillRect(0, 0, this.camera.viewW, this.camera.viewH);
+      // タイトル：ネビュラの中をゆっくり漂うアンビエント背景
+      const t = performance.now() / 1000;
+      s.time = t * 0.5;
+      this.camera.x = WORLD_W / 2 + Math.sin(t * 0.07) * 420;
+      this.camera.y = WORLD_H / 2 + Math.cos(t * 0.05) * 320;
+      renderAmbient(s, this.ctx);
       return;
     }
     renderWorld(s, this.ctx);

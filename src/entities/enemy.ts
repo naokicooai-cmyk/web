@@ -38,7 +38,7 @@ export function spawnEnemy(state: GameState, type: EnemyTypeId, x: number, y: nu
   e.poison = 0;
   e.poisonTtl = 0;
   e.segIndex = 0;
-  e.spriteScale = 1;
+  e.spriteScale = 0.15; // ぽんっと膨らんで出現する
   e.alive = true;
   if (type === 'minion') {
     state.minions.push(e);
@@ -186,6 +186,11 @@ export function updateEnemies(state: GameState, dt: number): void {
   for (const e of state.enemies) {
     if (!e.alive) continue;
     e.flash = Math.max(0, e.flash - dt);
+
+    // 出現スケールイン（自爆の膨張中は除く）
+    if (e.spriteScale < 1 && !(e.behavior === 'explode' && e.state === 1)) {
+      e.spriteScale = Math.min(1, e.spriteScale + dt * 5);
+    }
 
     // 毒DoT
     if (e.poisonTtl > 0) {

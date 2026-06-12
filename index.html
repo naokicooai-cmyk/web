@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>EVOLVORE</title>
+  <style>
+    :root {
+      --bg: #0a0a14;
+      --panel: rgba(16, 18, 34, 0.92);
+      --accent: #7df9ff;
+      --accent2: #c47dff;
+      --gold: #ffd24d;
+      --danger: #ff5470;
+      --text: #e8ecff;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+    body { font-family: 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif; color: var(--text); }
+    #game { position: fixed; inset: 0; display: block; cursor: crosshair; }
+    .overlay {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 18px;
+      background: rgba(5, 6, 14, 0.78); backdrop-filter: blur(3px);
+      z-index: 10; user-select: none;
+    }
+    .hidden { display: none !important; }
+    .logo {
+      font-size: clamp(42px, 9vw, 88px); font-weight: 900; letter-spacing: 0.08em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-shadow: 0 0 40px rgba(125, 249, 255, 0.25);
+    }
+    .tagline { font-size: clamp(14px, 2.4vw, 20px); opacity: 0.9; }
+    .btn {
+      font-size: 22px; font-weight: 700; padding: 14px 56px; border-radius: 12px;
+      border: 2px solid var(--accent); background: rgba(125, 249, 255, 0.08);
+      color: var(--accent); cursor: pointer; letter-spacing: 0.1em;
+      transition: transform 0.08s, background 0.15s;
+    }
+    .btn:hover:not(:disabled) { background: rgba(125, 249, 255, 0.22); transform: scale(1.05); }
+    .btn:disabled { opacity: 0.4; cursor: default; border-color: #556; color: #99a; }
+    .btn-small {
+      font-size: 14px; padding: 6px 16px; border-radius: 8px;
+      border: 1px solid #5a6080; background: transparent; color: var(--text); cursor: pointer;
+    }
+    .btn-small:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-small.active { border-color: var(--accent); color: var(--accent); background: rgba(125, 249, 255, 0.1); }
+    .help { font-size: 14px; line-height: 1.9; opacity: 0.85; text-align: center; }
+    .panel {
+      background: var(--panel); border: 1px solid #2a3055; border-radius: 14px;
+      padding: 18px 26px; max-width: min(92vw, 560px);
+    }
+    .panel h3 { font-size: 15px; color: var(--accent); margin-bottom: 8px; letter-spacing: 0.1em; }
+    #ranking-list { font-size: 13px; line-height: 1.8; min-width: 300px; }
+    #ranking-list .rank-row { display: flex; justify-content: space-between; gap: 18px; }
+    #ranking-list .rank-row span:first-child { color: var(--gold); }
+    .cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+    .card {
+      width: 200px; min-height: 200px; padding: 16px 14px; border-radius: 14px;
+      background: var(--panel); border: 2px solid #2a3055; cursor: pointer;
+      display: flex; flex-direction: column; gap: 8px; text-align: center; align-items: center;
+      transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+    }
+    .card:hover {
+      transform: translateY(-6px) scale(1.03); border-color: var(--accent);
+      box-shadow: 0 0 24px rgba(125, 249, 255, 0.3);
+    }
+    .card.super { border-color: var(--gold); box-shadow: 0 0 24px rgba(255, 210, 77, 0.35); }
+    .card .key {
+      width: 26px; height: 26px; border-radius: 6px; border: 1px solid #5a6080;
+      display: flex; align-items: center; justify-content: center; font-size: 13px; color: #9aa3cc;
+    }
+    .card .icon { font-size: 40px; line-height: 1.2; filter: drop-shadow(0 0 8px rgba(125,249,255,0.5)); }
+    .card .name { font-weight: 700; font-size: 16px; }
+    .card .kind { font-size: 11px; color: var(--accent2); letter-spacing: 0.08em; }
+    .card .desc { font-size: 12px; opacity: 0.85; line-height: 1.5; }
+    .modal-title { font-size: 26px; font-weight: 800; letter-spacing: 0.12em; color: var(--accent); }
+    .modal-title.evo { color: var(--gold); text-shadow: 0 0 24px rgba(255, 210, 77, 0.4); }
+    #result-stats { font-size: 15px; line-height: 2.1; min-width: 300px; }
+    #result-stats .stat-row { display: flex; justify-content: space-between; gap: 30px; }
+    #result-stats .stat-row span:last-child { color: var(--accent); font-weight: 700; }
+    #death-cause { color: var(--danger); font-size: 15px; }
+    #result-title { font-size: 38px; font-weight: 900; letter-spacing: 0.1em; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    #title-footer { font-size: 11px; opacity: 0.5; }
+    @media (max-width: 640px) {
+      .card { width: 150px; min-height: 170px; }
+      .card .icon { font-size: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="title-screen" class="overlay">
+    <div class="logo">EVOLVORE</div>
+    <div class="tagline" data-i18n="tagline"></div>
+    <div class="row">
+      <button id="lang-ja" class="btn-small">日本語</button>
+      <button id="lang-en" class="btn-small">English</button>
+      <button id="mute-btn" class="btn-small">🔊</button>
+    </div>
+    <button id="play-btn" class="btn" data-i18n="play"></button>
+    <div class="help" id="title-help"></div>
+    <div class="panel">
+      <h3 data-i18n="ranking"></h3>
+      <div id="ranking-list"></div>
+    </div>
+    <div id="title-footer">EVOLVORE — devour, evolve, dominate.</div>
+  </div>
+
+  <div id="levelup-screen" class="overlay hidden">
+    <div class="modal-title" id="levelup-title"></div>
+    <div class="cards" id="levelup-cards"></div>
+  </div>
+
+  <div id="evolution-screen" class="overlay hidden">
+    <div class="modal-title evo" id="evolution-title"></div>
+    <div class="cards" id="evolution-cards"></div>
+  </div>
+
+  <div id="result-screen" class="overlay hidden">
+    <div id="result-title"></div>
+    <div id="death-cause"></div>
+    <div class="panel"><div id="result-stats"></div></div>
+    <button id="retry-btn" class="btn"></button>
+    <button id="to-title-btn" class="btn-small" data-i18n="backToTitle"></button>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+import { audio } from '../core/audio';
+import { WEAPONS } from '../data/weapons';
+import type { Enemy, WeaponId } from '../types';
+import type { GameState } from '../state';
+import { spawnBullet } from '../entities/bullet';
+import { damageEnemy } from '../entities/enemy';
+import { spawnBurst, spawnLine } from '../systems/particles';
+
+export function addWeapon(state: GameState, id: WeaponId): void {
+  state.player.weapons.push({ defId: id, level: 1, timer: 0.2, angle: 0 });
+}
+
+/** ベース武器を超進化武器へ置換する */
+export function superEvolve(state: GameState, baseId: WeaponId, superId: WeaponId): void {
+  const w = state.player.weapons.find((x) => x.defId === baseId);
+  if (!w) return;
+  // 既存の周回刃・霧などは消す（新形態が張り直す）
+  for (const b of state.bullets) {
+    if (b.weaponId === baseId) b.alive = false;
+  }
+  w.defId = superId;
+  w.level = 1;
+  w.timer = 0;
+}
+
+export function nearestEnemy(state: GameState, x: number, y: number, maxDist: number): Enemy | null {
+  let best: Enemy | null = null;
+  let bestD = maxDist * maxDist;
+  for (const e of state.enemies) {
+    if (!e.alive) continue;
+    const dx = e.pos.x - x;
+    const dy = e.pos.y - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestD) {
+      bestD = d;
+      best = e;
+    }
+  }
+  return best;
+}
+
+function aliveBulletsOf(state: GameState, id: WeaponId): number {
+  let n = 0;
+  for (const b of state.bullets) {
+    if (b.alive && b.weaponId === id) n++;
+  }
+  return n;
+}
+
+export function updateWeapons(state: GameState, dt: number): void {
+  const p = state.player;
+  const m = p.mods;
+  for (const w of p.weapons) {
+    const def = WEAPONS[w.defId];
+    const s = def.stats(w.level);
+    const damage = s.damage * m.damageMul;
+    const cooldown = Math.max(0.1, s.cooldown * m.cooldownMul);
+    const area = s.area * m.areaMul;
+    w.timer -= dt;
+
+    switch (w.defId) {
+      case 'orbit': {
+        if (w.timer > 0) break;
+        if (aliveBulletsOf(state, 'orbit') > 0) break;
+        const dist = p.radius + 30 + area;
+        for (let i = 0; i < s.count; i++) {
+          spawnBullet(state, {
+            x: p.pos.x,
+            y: p.pos.y,
+            kind: 'orbit',
+            fromPlayer: true,
+            damage,
+            pierce: 999,
+            ttl: s.ttl,
+            radius: area,
+            weaponId: 'orbit',
+            angle: (i / s.count) * Math.PI * 2,
+            orbitDist: dist,
+            rotSpeed: s.speed,
+            poison: m.poisonOnHit,
+          });
+        }
+        w.timer = s.ttl + cooldown;
+        break;
+      }
+      case 'guillotine': {
+        // 常時展開：欠けた刃を補充し続ける
+        const have = aliveBulletsOf(state, 'guillotine');
+        for (let i = have; i < s.count; i++) {
+          spawnBullet(state, {
+            x: p.pos.x,
+            y: p.pos.y,
+            kind: 'orbit',
+            fromPlayer: true,
+            damage,
+            pierce: 999,
+            ttl: 9999,
+            radius: area,
+            weaponId: 'guillotine',
+            angle: (i / s.count) * Math.PI * 2,
+            orbitDist: p.radius + 30 + area,
+            rotSpeed: s.speed,
+            poison: m.poisonOnHit,
+          });
+        }
+        break;
+      }
+      case 'spine':
+      case 'leech': {
+        if (w.timer > 0) break;
+        const target = nearestEnemy(state, p.pos.x, p.pos.y, 560);
+        if (!target) break;
+        w.timer = cooldown;
+        const count = s.count + m.extraProjectiles;
+        const baseAng = Math.atan2(target.pos.y - p.pos.y, target.pos.x - p.pos.x);
+        for (let i = 0; i < count; i++) {
+          const spread = (i - (count - 1) / 2) * 0.16;
+          spawnBullet(state, {
+            x: p.pos.x,
+            y: p.pos.y,
+            vx: Math.cos(baseAng + spread) * s.speed,
+            vy: Math.sin(baseAng + spread) * s.speed,
+            kind: 'straight',
+            fromPlayer: true,
+            damage,
+            pierce: s.pierce,
+            ttl: s.ttl,
+            radius: area,
+            weaponId: w.defId,
+            leech: w.defId === 'leech' ? 0.35 : 0,
+            poison: m.poisonOnHit,
+          });
+        }
+        audio.play('shoot');
+        break;
+      }
+      case 'railspine': {
+        if (w.timer > 0) break;
+        const target = nearestEnemy(state, p.pos.x, p.pos.y, 900);
+        if (!target) break;
+        w.timer = cooldown;
+        const ang = Math.atan2(target.pos.y - p.pos.y, target.pos.x - p.pos.x);
+        spawnBullet(state, {
+          x: p.pos.x,
+          y: p.pos.y,
+          vx: Math.cos(ang) * s.speed,
+          vy: Math.sin(ang) * s.speed,
+          kind: 'rail',
+          fromPlayer: true,
+          damage,
+          pierce: 999,
+          ttl: s.ttl,
+          radius: area,
+          weaponId: 'railspine',
+          angle: ang,
+          poison: m.poisonOnHit,
+        });
+        audio.play('shoot');
+        state.camera.shake(3);
+        break;
+      }
+      case 'mist': {
+        if (w.timer > 0) break;
+        w.timer = cooldown;
+        spawnBullet(state, {
+          x: p.pos.x,
+          y: p.pos.y,
+          kind: 'zone',
+          fromPlayer: true,
+          damage, // zoneはDPS扱い（collisionで0.25秒tick）
+          pierce: 999,
+          ttl: s.ttl,
+          radius: area,
+          weaponId: 'mist',
+          poison: m.poisonOnHit,
+        });
+        break;
+      }
+      case 'miasma': {
+        if (aliveBulletsOf(state, 'miasma') > 0) break;
+        spawnBullet(state, {
+          x: p.pos.x,
+          y: p.pos.y,
+          kind: 'zone',
+          fromPlayer: true,
+          damage,
+          pierce: 999,
+          ttl: 9999,
+          radius: area,
+          weaponId: 'miasma',
+          poison: Math.max(4, m.poisonOnHit),
+        });
+        break;
+      }
+      case 'chain': {
+        if (w.timer > 0) break;
+        const first = nearestEnemy(state, p.pos.x, p.pos.y, area);
+        if (!first) break;
+        w.timer = cooldown;
+        audio.play('shoot');
+        // 敵から敵へ連鎖する雷（即時ヒットスキャン）
+        const hit: Enemy[] = [first];
+        let from: { x: number; y: number } = p.pos;
+        let current: Enemy | null = first;
+        for (let jump = 0; jump < s.count && current; jump++) {
+          spawnLine(state, from.x, from.y, current.pos.x, current.pos.y, '#9ae8ff');
+          spawnBurst(state, current.pos.x, current.pos.y, '#9ae8ff', 4, 120, 2, 0.2);
+          damageEnemy(state, current, damage, from.x, from.y, { poison: m.poisonOnHit });
+          from = current.pos;
+          let next: Enemy | null = null;
+          let bestD = 200 * 200;
+          for (const e of state.enemies) {
+            if (!e.alive || hit.includes(e)) continue;
+            const dx = e.pos.x - from.x;
+            const dy = e.pos.y - from.y;
+            const d = dx * dx + dy * dy;
+            if (d < bestD) {
+              bestD = d;
+              next = e;
+            }
+          }
+          if (next) hit.push(next);
+          current = next;
+        }
+        break;
+      }
+      case 'ricochet': {
+        if (w.timer > 0) break;
+        w.timer = cooldown;
+        const count = s.count + m.extraProjectiles;
+        for (let i = 0; i < count; i++) {
+          const ang = state.rng.range(0, Math.PI * 2);
+          spawnBullet(state, {
+            x: p.pos.x,
+            y: p.pos.y,
+            vx: Math.cos(ang) * s.speed,
+            vy: Math.sin(ang) * s.speed,
+            kind: 'straight',
+            fromPlayer: true,
+            damage,
+            pierce: s.pierce,
+            ttl: s.ttl,
+            radius: area,
+            weaponId: 'ricochet',
+            poison: m.poisonOnHit,
+          });
+        }
+        audio.play('shoot');
+        break;
+      }
+      case 'mine': {
+        if (w.timer > 0) break;
+        w.timer = cooldown;
+        for (let i = 0; i < s.count; i++) {
+          spawnBullet(state, {
+            x: p.pos.x + state.rng.range(-20, 20),
+            y: p.pos.y + state.rng.range(-20, 20),
+            kind: 'mine',
+            fromPlayer: true,
+            damage,
+            pierce: 999,
+            ttl: s.ttl,
+            radius: 9,
+            weaponId: 'mine',
+            armTimer: 0.5,
+            orbitDist: area, // 爆発半径として使う
+            poison: m.poisonOnHit,
+          });
+        }
+        break;
+      }
+    }
+  }
+
+  // ヘルストーム固有：全方位弾
+  if (m.radialShots > 0) {
+    p.radialTimer -= dt;
+    if (p.radialTimer <= 0) {
+      p.radialTimer = 2.4 * m.cooldownMul;
+      audio.play('shoot');
+      for (let i = 0; i < m.radialShots; i++) {
+        const ang = (i / m.radialShots) * Math.PI * 2 + state.time;
+        spawnBullet(state, {
+          x: p.pos.x,
+          y: p.pos.y,
+          vx: Math.cos(ang) * 360,
+          vy: Math.sin(ang) * 360,
+          kind: 'straight',
+          fromPlayer: true,
+          damage: 16 * m.damageMul,
+          pierce: 1,
+          ttl: 1.4,
+          radius: 7,
+          weaponId: null,
+          poison: m.poisonOnHit,
+        });
+      }
+    }
+  }
+}
+
+/** Lvアップ時に既存の周回刃を張り直す（半径・威力が変わるため） */
+export function refreshOrbitals(state: GameState, weaponId: WeaponId): void {
+  for (const b of state.bullets) {
+    if (b.weaponId === weaponId && b.kind === 'orbit') b.alive = false;
+  }
+  const w = state.player.weapons.find((x) => x.defId === weaponId);
+  if (w) w.timer = 0;
+}

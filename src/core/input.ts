@@ -1,7 +1,7 @@
 /**
  * マウス / WASD / タッチ / Space を一元管理。
- * 移動はマウス追従が基本、WASDが押されていればそちらを優先。
- * タッチは「タッチ位置へ移動＋ダブルタップでスキル」。
+ * 移動は WASD / 矢印キー。マウスは照準（照準砲など）専用で、移動には使わない。
+ * スキルは右クリック / Space。タッチはダブルタップでスキル。
  */
 export class Input {
   mouseX = 0;
@@ -18,12 +18,15 @@ export class Input {
       this.mouseY = e.clientY;
     });
     canvas.addEventListener('mousedown', (e) => {
-      if (e.button === 0) {
+      if (e.button === 2) {
+        // 右クリック＝アクティブスキル
         this.mouseDown = true;
         this.skillPressed = true;
       }
     });
     window.addEventListener('mouseup', () => (this.mouseDown = false));
+    // 右クリックメニューを抑制（スキル操作のため）
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('keydown', (e) => {
       this.keys.add(e.code);
       if (e.code === 'Space') {

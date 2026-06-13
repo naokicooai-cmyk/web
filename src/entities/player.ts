@@ -152,30 +152,19 @@ export function healPlayer(p: PlayerState, amount: number): void {
   p.hp = clamp(p.hp + amount, 0, p.maxHp);
 }
 
-/** 入力 → 移動。マウス追従が基本、WASD優先 */
+/** 入力 → 移動。WASD / 矢印キーのみ（マウスは照準専用） */
 export function updatePlayerMovement(state: GameState, dt: number): void {
   const p = state.player;
   const input = state.input;
   const speed = playerSpeed(p);
 
+  // 移動は WASD / 矢印キーのみ。マウスは移動に使わない（照準専用）。
   const wasd = input.wasdDir();
   let dirX = 0;
   let dirY = 0;
   if (wasd) {
     dirX = wasd.x;
     dirY = wasd.y;
-  } else {
-    const wx = state.camera.toWorldX(input.mouseX);
-    const wy = state.camera.toWorldY(input.mouseY);
-    const dx = wx - p.pos.x;
-    const dy = wy - p.pos.y;
-    const dist = Math.hypot(dx, dy);
-    // カーソル直下では停止できる（デッドゾーン）
-    if (dist > 14) {
-      const ease = Math.min(1, (dist - 14) / 60);
-      dirX = (dx / dist) * ease;
-      dirY = (dy / dist) * ease;
-    }
   }
 
   p.vel.x = dirX * speed;

@@ -150,7 +150,13 @@ export class UIOverlays {
         <div class="kind" style="color:${cls.color}">Lv${cls.tier}</div>
         <div class="name">${t(`class.${id}.name`)}</div>
         <div class="desc">${t(`class.${id}.desc`)}</div>
-        <div class="desc">⚡ ${t(`skill.${cls.skill}.name`)} — ${t(`skill.${cls.skill}.desc`)}</div>`;
+        <div class="skill-box" style="border-color:${cls.color}55">
+          <div class="skill-head" style="color:${cls.color}">
+            <span>⚡ ${t('skillLabel')}：${t(`skill.${cls.skill}.name`)}</span>
+            <span class="ct">CT ${cls.skillCooldown}s</span>
+          </div>
+          <div class="skill-desc">${t(`skill.${cls.skill}.desc`)}</div>
+        </div>`;
       div.addEventListener('click', () => {
         audio.play('evolve');
         this.onEvolvePick(id);

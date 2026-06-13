@@ -111,6 +111,8 @@ export function makeEnemy(): Enemy {
     poisonTtl: 0,
     segIndex: 0,
     spriteScale: 1,
+    poisonAccum: 0,
+    poisonNumTimer: 0,
   };
 }
 

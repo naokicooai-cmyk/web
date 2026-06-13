@@ -621,15 +621,20 @@ function drawDamageNumbers(state: GameState, ctx: CanvasRenderingContext2D): voi
   ctx.textAlign = 'center';
   for (const d of state.damageNumbers) {
     if (!d.alive) continue;
-    ctx.globalAlpha = Math.min(1, d.ttl * 2.5);
-    ctx.font = d.crit ? 'bold 19px sans-serif' : 'bold 13px sans-serif';
+    ctx.globalAlpha = Math.min(1, d.ttl * 2.5) * (d.poison ? 0.92 : 1);
+    ctx.font = d.crit
+      ? 'bold 19px sans-serif'
+      : d.poison
+        ? '600 12px sans-serif'
+        : 'bold 13px sans-serif';
     const x = cam.toScreenX(d.x);
     const y = cam.toScreenY(d.y);
+    const label = d.poison ? `☠${d.value}` : String(d.value);
     ctx.strokeStyle = 'rgba(0,0,0,0.7)';
     ctx.lineWidth = 3;
-    ctx.strokeText(String(d.value), x, y);
-    ctx.fillStyle = d.heal ? '#5aff8c' : d.crit ? '#ffd24d' : '#ffffff';
-    ctx.fillText(String(d.value), x, y);
+    ctx.strokeText(label, x, y);
+    ctx.fillStyle = d.poison ? '#c77dff' : d.heal ? '#5aff8c' : d.crit ? '#ffd24d' : '#ffffff';
+    ctx.fillText(label, x, y);
   }
   ctx.globalAlpha = 1;
 }

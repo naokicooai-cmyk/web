@@ -89,6 +89,7 @@ export function spawnDamageNumber(
   value: number,
   crit = false,
   heal = false,
+  poison = false,
 ): void {
   // 同時表示は60個まで（視認性とコスト）
   if (state.damageNumbers.length > 60) return;
@@ -99,6 +100,7 @@ export function spawnDamageNumber(
     ttl: 0.7,
     crit,
     heal,
+    poison,
     alive: true,
   });
 }

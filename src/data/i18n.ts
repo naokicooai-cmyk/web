@@ -16,6 +16,7 @@ export const STRINGS: Record<string, Entry> = {
   retryIn: { ja: '再出撃まで {n}', en: 'Redeploy in {n}' },
   levelupTitle: { ja: 'LEVEL UP — 強化を選べ', en: 'LEVEL UP — Choose your power' },
   evolutionTitle: { ja: '進化分岐 — 道を選べ', en: 'EVOLUTION — Choose your path' },
+  skillLabel: { ja: 'アクティブスキル', en: 'Active Skill' },
   resultSurvived: { ja: '生存達成！', en: 'SURVIVED!' },
   resultDead: { ja: '捕食された…', en: 'DEVOURED...' },
   newRecord: { ja: '★ 新記録！', en: '★ NEW RECORD!' },

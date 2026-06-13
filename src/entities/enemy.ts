@@ -37,6 +37,8 @@ export function spawnEnemy(state: GameState, type: EnemyTypeId, x: number, y: nu
   e.flash = 0;
   e.poison = 0;
   e.poisonTtl = 0;
+  e.poisonAccum = 0;
+  e.poisonNumTimer = 0;
   e.segIndex = 0;
   e.spriteScale = 0.15; // ぽんっと膨らんで出現する
   e.alive = true;
@@ -192,11 +194,23 @@ export function updateEnemies(state: GameState, dt: number): void {
       e.spriteScale = Math.min(1, e.spriteScale + dt * 5);
     }
 
-    // 毒DoT
+    // 毒DoT：削りつつ、溜まった毒ダメージを0.5秒ごとに数字表示
     if (e.poisonTtl > 0) {
       e.poisonTtl -= dt;
-      e.hp -= e.poison * dt;
+      const tick = e.poison * dt;
+      e.hp -= tick;
+      e.poisonAccum += tick;
+      e.flash = Math.max(e.flash, 0.06); // 毒の脈動フラッシュ
+      e.poisonNumTimer -= dt;
+      if (e.poisonNumTimer <= 0 && e.poisonAccum >= 1) {
+        spawnDamageNumber(state, e.pos.x, e.pos.y - e.radius, e.poisonAccum, false, false, true);
+        e.poisonAccum = 0;
+        e.poisonNumTimer = 0.5;
+      }
       if (e.hp <= 0) {
+        if (e.poisonAccum >= 1) {
+          spawnDamageNumber(state, e.pos.x, e.pos.y - e.radius, e.poisonAccum, false, false, true);
+        }
         killEnemy(state, e);
         continue;
       }

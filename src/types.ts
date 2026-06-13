@@ -115,6 +115,8 @@ export interface Enemy extends Entity {
   poisonTtl: number;
   segIndex: number; // worm の節番号（headは0）
   spriteScale: number;
+  poisonAccum: number; // 表示用に溜めた毒ダメージ
+  poisonNumTimer: number; // 次の毒ダメージ数字までの残り
 }
 
 export interface Gem extends Entity {
@@ -146,6 +148,7 @@ export interface DamageNumber {
   ttl: number;
   crit: boolean;
   heal: boolean;
+  poison: boolean;
   alive: boolean;
 }
 

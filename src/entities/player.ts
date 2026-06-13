@@ -23,6 +23,7 @@ export function defaultMods(): StatMods {
     minionCount: 0,
     lifesteal: 0,
     auraPoison: 0,
+    xpMul: 1,
   };
 }
 
@@ -100,7 +101,7 @@ export function playerSpeed(p: PlayerState): number {
 /** XP加算。レベルアップ分のドラフト/進化を state のキューに積む */
 export function gainXp(state: GameState, amount: number): void {
   const p = state.player;
-  p.xp += amount;
+  p.xp += amount * p.mods.xpMul; // 経験値アップパッシブ分を上乗せ
   p.mass += amount * 0.6;
   p.score += Math.round(amount * 5);
   updateBodySize(p);

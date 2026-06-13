@@ -25,7 +25,7 @@ export type WeaponId =
   | 'miasma'
   | 'railspine';
 
-export type PassiveId = 'pickup' | 'speed' | 'cdr' | 'armor' | 'maxhp' | 'shrink';
+export type PassiveId = 'pickup' | 'speed' | 'cdr' | 'armor' | 'maxhp' | 'shrink' | 'xpgain';
 
 export type ClassId =
   | 'protoform'
@@ -95,6 +95,7 @@ export interface Bullet extends Entity {
   leech: number; // 与ダメ→回復率
   armTimer: number; // mine の起爆準備
   poison: number; // 命中時に付与する毒DPS
+  hitSet: Set<Enemy> | null; // rail等：同一弾が同じ敵に二重ヒットしないための記録
 }
 
 export interface Enemy extends Entity {
@@ -208,4 +209,5 @@ export interface StatMods {
   minionCount: number; // 群体系
   lifesteal: number; // 寄生系
   auraPoison: number; // ヴェノムロード：常時周囲毒DPS
+  xpMul: number; // 経験値獲得倍率（経験値アップパッシブ）
 }

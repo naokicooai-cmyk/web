@@ -87,10 +87,10 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'devour',
     skillCooldown: 7,
     apply: (m) => {
-      m.maxHpMul *= 1.35;
-      m.damageMul *= 1.15;
-      m.contactDamage = 22;
-      m.speedMul *= 1.1;
+      m.maxHpMul *= 1.5;
+      m.damageMul *= 1.2;
+      m.contactDamage = 28;
+      m.speedMul *= 1.15;
     },
   },
   venom: {
@@ -104,9 +104,10 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'devour',
     skillCooldown: 7,
     apply: (m) => {
-      m.maxHpMul *= 1.25;
-      m.contactDamage = 8;
-      m.poisonOnHit = 7;
+      m.maxHpMul *= 1.3;
+      m.contactDamage = 12;
+      m.poisonOnHit = 12;
+      m.auraPoison = 10; // 進化：常時毒オーラを纏う
     },
   },
   sniper: {
@@ -120,9 +121,9 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'aimcannon',
     skillCooldown: 4.5,
     apply: (m) => {
-      m.damageMul *= 1.65;
-      m.cooldownMul *= 1.1;
-      m.critChance = 0.18;
+      m.damageMul *= 1.9;
+      m.cooldownMul *= 1.05;
+      m.critChance = 0.28;
     },
   },
   barrage: {
@@ -136,9 +137,10 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'aimcannon',
     skillCooldown: 4.5,
     apply: (m) => {
-      m.damageMul *= 1.05;
-      m.cooldownMul *= 0.88;
-      m.extraProjectiles = 1;
+      m.damageMul *= 1.1;
+      m.cooldownMul *= 0.82;
+      m.extraProjectiles = 2;
+      m.radialShots = 5; // 進化：全方位弾を常時ばら撒く
     },
   },
   splitter: {
@@ -152,8 +154,9 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'swarmburst',
     skillCooldown: 6,
     apply: (m) => {
-      m.minionCount = 4;
-      m.speedMul *= 1.05;
+      m.minionCount = 6;
+      m.speedMul *= 1.1;
+      m.damageMul *= 1.1;
     },
   },
   parasite: {
@@ -167,8 +170,9 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'swarmburst',
     skillCooldown: 6,
     apply: (m) => {
-      m.minionCount = 3;
-      m.lifesteal = 0.05;
+      m.minionCount = 4;
+      m.lifesteal = 0.1;
+      m.maxHpMul *= 1.2; // 進化：喰った命でHP上限も伸びる
     },
   },
   // ---- Lv30 ----
@@ -183,10 +187,10 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'devour',
     skillCooldown: 6,
     apply: (m) => {
-      m.maxHpMul *= 1.7;
-      m.damageMul *= 1.3;
-      m.contactDamage = 45;
-      m.speedMul *= 1.15;
+      m.maxHpMul *= 1.8;
+      m.damageMul *= 1.35;
+      m.contactDamage = 55;
+      m.speedMul *= 1.2;
     },
   },
   venomlord: {
@@ -201,9 +205,9 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skillCooldown: 6,
     apply: (m) => {
       m.maxHpMul *= 1.45;
-      m.contactDamage = 14;
-      m.poisonOnHit = 14;
-      m.auraPoison = 16;
+      m.contactDamage = 16;
+      m.poisonOnHit = 16;
+      m.auraPoison = 20;
     },
   },
   deadeye: {
@@ -217,8 +221,8 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'aimcannon',
     skillCooldown: 3.5,
     apply: (m) => {
-      m.damageMul *= 2.3;
-      m.critChance = 0.35;
+      m.damageMul *= 2.6;
+      m.critChance = 0.4;
     },
   },
   hellstorm: {
@@ -232,10 +236,10 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'aimcannon',
     skillCooldown: 3.5,
     apply: (m) => {
-      m.damageMul *= 1.15;
-      m.cooldownMul *= 0.78;
-      m.extraProjectiles = 2;
-      m.radialShots = 8;
+      m.damageMul *= 1.2;
+      m.cooldownMul *= 0.74;
+      m.extraProjectiles = 3;
+      m.radialShots = 10;
     },
   },
   legion: {
@@ -249,8 +253,9 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'swarmburst',
     skillCooldown: 5,
     apply: (m) => {
-      m.minionCount = 8;
-      m.speedMul *= 1.12;
+      m.minionCount = 10;
+      m.speedMul *= 1.15;
+      m.damageMul *= 1.15;
     },
   },
   hivequeen: {
@@ -264,10 +269,10 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skill: 'swarmburst',
     skillCooldown: 5,
     apply: (m) => {
-      m.minionCount = 6;
-      m.lifesteal = 0.09;
-      m.damageMul *= 1.25;
-      m.maxHpMul *= 1.3;
+      m.minionCount = 7;
+      m.lifesteal = 0.14;
+      m.damageMul *= 1.3;
+      m.maxHpMul *= 1.35;
     },
   },
 };

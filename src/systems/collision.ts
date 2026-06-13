@@ -143,18 +143,24 @@ function resolvePlayerBullet(state: GameState, b: Bullet): void {
       }
       break;
     }
+    case 'rail': {
+      // 全貫通：軌道に重なる敵すべてに同時ヒット。同じ敵への二重ヒットだけ防ぐ
+      const near = hash.query(b.pos.x, b.pos.y, b.radius);
+      for (const e of near) {
+        if (!e.alive || !circlesHit(e.pos, e.radius, b.pos, b.radius)) continue;
+        if (b.hitSet && b.hitSet.has(e)) continue;
+        damageEnemy(state, e, b.damage, b.pos.x, b.pos.y, { poison: b.poison, leech: b.leech });
+        b.hitSet?.add(e);
+      }
+      break;
+    }
     default: {
-      // straight / rail / homing
+      // straight / homing
       if (b.hitTimer > 0) break;
       const near = hash.query(b.pos.x, b.pos.y, b.radius);
       for (const e of near) {
         if (!e.alive || !circlesHit(e.pos, e.radius, b.pos, b.radius)) continue;
         damageEnemy(state, e, b.damage, b.pos.x, b.pos.y, { poison: b.poison, leech: b.leech });
-        if (b.kind === 'rail') {
-          // 全貫通：当たり続けないよう短い不応期だけ置く
-          b.hitTimer = 0.05;
-          break;
-        }
         if (b.weaponId === 'ricochet') {
           // 敵に当たるとランダム方向へ跳ねる
           const speed = Math.hypot(b.vel.x, b.vel.y);

@@ -130,6 +130,7 @@ export function makeBullet(): Bullet {
     leech: 0,
     armTimer: 0,
     poison: 0,
+    hitSet: null,
   };
 }
 

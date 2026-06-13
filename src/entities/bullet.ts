@@ -41,6 +41,13 @@ export function spawnBullet(state: GameState, init: BulletInit): Bullet {
   b.leech = init.leech ?? 0;
   b.armTimer = init.armTimer ?? 0;
   b.poison = init.poison ?? 0;
+  // rail（貫通レール）は1発で全敵を1回ずつ貫く。命中記録セットを用意する
+  if (init.kind === 'rail') {
+    b.hitSet = b.hitSet ?? new Set();
+    b.hitSet.clear();
+  } else {
+    b.hitSet = null;
+  }
   b.alive = true;
   state.bullets.push(b);
   return b;

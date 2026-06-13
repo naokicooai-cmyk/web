@@ -44,8 +44,22 @@ export const PASSIVES: Record<PassiveId, PassiveDef> = {
     maxLevel: 3,
     apply: (m, l) => (m.shrinkMul *= Math.pow(0.88, l)),
   },
+  xpgain: {
+    id: 'xpgain',
+    icon: '💎',
+    maxLevel: 5,
+    apply: (m, l) => (m.xpMul *= 1 + 0.15 * l),
+  },
 };
 
-export const ALL_PASSIVES: PassiveId[] = ['pickup', 'speed', 'cdr', 'armor', 'maxhp', 'shrink'];
+export const ALL_PASSIVES: PassiveId[] = [
+  'pickup',
+  'speed',
+  'cdr',
+  'armor',
+  'maxhp',
+  'shrink',
+  'xpgain',
+];
 
 export const MAX_PASSIVE_SLOTS = 6;

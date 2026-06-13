@@ -33,8 +33,8 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     isSuper: false,
     stats: (l) => ({
       damage: 10 + lv(l) * 4,
-      cooldown: 3.4 - lv(l) * 0.15,
-      count: 2 + Math.floor(lv(l) / 2),
+      cooldown: 0, // 常時展開（クールダウンなし）
+      count: 2 + lv(l), // Lv1:2 → Lv8:9。レベルごとに刃が1枚増える
       speed: 3.2 + lv(l) * 0.25, // 回転 rad/s
       area: 13 + lv(l) * 1.5,
       ttl: 2.0 + lv(l) * 0.12,

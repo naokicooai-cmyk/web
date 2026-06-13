@@ -60,10 +60,10 @@ export function updateWeapons(state: GameState, dt: number): void {
 
     switch (w.defId) {
       case 'orbit': {
-        if (w.timer > 0) break;
-        if (aliveBulletsOf(state, 'orbit') > 0) break;
+        // 常時展開：欠けた刃を補充し続け、常に s.count 枚が回り続ける
+        const have = aliveBulletsOf(state, 'orbit');
         const dist = p.radius + 30 + area;
-        for (let i = 0; i < s.count; i++) {
+        for (let i = have; i < s.count; i++) {
           spawnBullet(state, {
             x: p.pos.x,
             y: p.pos.y,
@@ -71,7 +71,7 @@ export function updateWeapons(state: GameState, dt: number): void {
             fromPlayer: true,
             damage,
             pierce: 999,
-            ttl: s.ttl,
+            ttl: 9999,
             radius: area,
             weaponId: 'orbit',
             angle: (i / s.count) * Math.PI * 2,
@@ -80,7 +80,6 @@ export function updateWeapons(state: GameState, dt: number): void {
             poison: m.poisonOnHit,
           });
         }
-        w.timer = s.ttl + cooldown;
         break;
       }
       case 'guillotine': {

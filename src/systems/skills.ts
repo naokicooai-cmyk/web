@@ -68,8 +68,8 @@ export function tryActiveSkill(state: GameState): void {
         fromPlayer: true,
         damage: (75 + p.level * 3) * p.mods.damageMul,
         pierce: 999,
-        ttl: 0.85,
-        radius: 13,
+        ttl: 0.95,
+        radius: 24, // 大きな貫通弾。全敵を貫く
         weaponId: null,
         angle: ang,
         poison: p.mods.poisonOnHit,

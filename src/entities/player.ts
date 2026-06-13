@@ -33,7 +33,7 @@ const BASE_RADIUS = 16;
 const BASE_PICKUP = 75;
 
 export function xpNextFor(level: number): number {
-  return Math.floor(6 + (level - 1) * 4 + Math.pow(level - 1, 1.7));
+  return Math.floor(5 + (level - 1) * 3.5 + Math.pow(level - 1, 1.5));
 }
 
 export function createPlayer(): PlayerState {

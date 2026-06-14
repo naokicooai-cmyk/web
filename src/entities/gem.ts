@@ -51,7 +51,11 @@ export function updateGems(state: GameState, dt: number): void {
     }
     // 磁石判定（プレイヤー優先、ボットも喰い合いに参加する）
     if (g.magnet === 0) {
-      if (p.alive && distSq(g.pos.x, g.pos.y, p.pos.x, p.pos.y) < p.pickupRange * p.pickupRange) {
+      if (
+        !p.mods.noGemPickup &&
+        p.alive &&
+        distSq(g.pos.x, g.pos.y, p.pos.x, p.pos.y) < p.pickupRange * p.pickupRange
+      ) {
         g.magnet = 1;
       } else if (botActive && distSq(g.pos.x, g.pos.y, bot.pos.x, bot.pos.y) < 70 * 70) {
         g.magnet = 2;
@@ -76,8 +80,8 @@ export function updateGems(state: GameState, dt: number): void {
     g.pos.x += g.vel.x * dt;
     g.pos.y += g.vel.y * dt;
 
-    // 吸収
-    if (p.alive && circlesHit(g.pos, g.radius, p.pos, p.radius + 4)) {
+    // 吸収（逆流する胃袋の間はプレイヤーは拾わない）
+    if (!p.mods.noGemPickup && p.alive && circlesHit(g.pos, g.radius, p.pos, p.radius + 4)) {
       g.alive = false;
       gainXp(state, g.value);
       audio.play('gem');

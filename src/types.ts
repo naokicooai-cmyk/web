@@ -74,11 +74,37 @@ export type EnemyBehavior =
 
 export type BulletKind = 'straight' | 'orbit' | 'zone' | 'mine' | 'enemy' | 'rail' | 'homing';
 
+/** ダメージの発生源タグ。タグ特化ビルド（+X% 投射ダメージ等）の基盤 */
+export type DamageTag =
+  | 'projectile'
+  | 'orbit'
+  | 'zone'
+  | 'mine'
+  | 'chain'
+  | 'contact'
+  | 'minion'
+  | 'poison';
+
+/** Skill Gene が武器に与える変異の1単位 */
+export type WeaponMutatorKind =
+  | 'addProjectile'
+  | 'addPierce'
+  | 'addChain'
+  | 'convertPoison'
+  | 'targetMaxHp'
+  | 'triggerOnKill';
+
+export interface WeaponMutator {
+  kind: WeaponMutatorKind;
+  value: number;
+}
+
 export interface WeaponInstance {
   defId: WeaponId;
   level: number; // 1〜8
   timer: number; // 次発射までの残り秒
   angle: number; // orbit系の現在角
+  mutators: WeaponMutator[]; // 割り当てられた Skill Gene 由来の変異
 }
 
 export interface Bullet extends Entity {
@@ -138,11 +164,14 @@ export interface AffixRoll {
   value: number; // ロール済みの値
 }
 
+export type RelicType = 'gene' | 'skill' | 'aberration';
+
 export interface Relic {
   uid: string; // 一意ID
-  baseId: string; // 見た目（アイコン・名前テーマ）
+  type: RelicType; // gene:ステ / skill:武器変異 / aberration:呪いユニーク
+  baseId: string; // gene:見た目テーマ / skill:SKILL_GENESのid / aberration:ABERRATIONSのid
   rarity: number; // 0:コモン 〜 4:レジェンダリ
-  affixes: AffixRoll[];
+  affixes: AffixRoll[]; // gene のみ使用
 }
 
 export interface Particle extends Entity {
@@ -192,6 +221,8 @@ export interface PlayerState extends Entity {
   kills: number;
   /** 研究所＋装備レリックからの永続補正（recomputeMods で毎回適用） */
   metaApplicators: ((m: StatMods) => void)[];
+  rageStacks: number; // 反転の殻などの一時火力スタック
+  rageTimer: number; // スタック減衰タイマー
 }
 
 export interface BotState extends Entity {
@@ -229,4 +260,12 @@ export interface StatMods {
   lifesteal: number; // 寄生系
   auraPoison: number; // ヴェノムロード：常時周囲毒DPS
   xpMul: number; // 経験値獲得倍率（経験値アップパッシブ）
+  // ---- 無限ビルド土台（タグ特化・Aberration 用）----
+  tagMul: Record<DamageTag, number>; // タグ別ダメージ倍率（既定 全1）
+  targetRangeMul: number; // 武器の索敵距離倍率（盲目の王冠）
+  massRadiusMul: number; // mass→半径成長の倍率（飽食の心臓の代償）
+  noHeal: boolean; // 回復不可（断食の輪）
+  noGemPickup: boolean; // ジェムを拾わない（逆流する胃袋）
+  devourXpMul: number; // 丸呑み時のXP倍率（逆流する胃袋）
+  minionsPassive: boolean; // ミニオンが攻撃しない（無音の巣）
 }

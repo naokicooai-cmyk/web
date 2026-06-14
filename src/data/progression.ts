@@ -73,6 +73,8 @@ export const UNLOCKS: UnlockDef[] = [
   { id: 'slot_2', icon: '➕', nameKey: 'unlock.slot2.name', descKey: 'unlock.slot.desc', cost: 120 },
   { id: 'slot_3', icon: '➕', nameKey: 'unlock.slot3.name', descKey: 'unlock.slot.desc', cost: 400 },
   { id: 'slot_4', icon: '➕', nameKey: 'unlock.slot4.name', descKey: 'unlock.slot.desc', cost: 1000 },
+  { id: 'aberration_2', icon: '🕳️', nameKey: 'unlock.aberr2.name', descKey: 'unlock.aberr2.desc', cost: 800 },
+  { id: 'weapon_socket_2', icon: '🧬', nameKey: 'unlock.socket2.name', descKey: 'unlock.socket2.desc', cost: 600 },
   { id: 'weapon_orbit', icon: '🪓', nameKey: 'unlock.orbit.name', descKey: 'unlock.weapon.desc', cost: 150 },
   { id: 'weapon_mist', icon: '☁️', nameKey: 'unlock.mist.name', descKey: 'unlock.weapon.desc', cost: 150 },
   { id: 'weapon_chain', icon: '⚡', nameKey: 'unlock.chain.name', descKey: 'unlock.weapon.desc', cost: 200 },
@@ -81,13 +83,23 @@ export const UNLOCKS: UnlockDef[] = [
   { id: 'weapon_mine', icon: '🥚', nameKey: 'unlock.mine.name', descKey: 'unlock.weapon.desc', cost: 250 },
 ];
 
-/** ロードアウトの装備スロット数（基本1＋アンロック分） */
+/** Gene-Mod の装備スロット数（基本1＋アンロック分） */
 export function loadoutSlots(unlocks: string[]): number {
   let n = 1;
   if (unlocks.includes('slot_2')) n++;
   if (unlocks.includes('slot_3')) n++;
   if (unlocks.includes('slot_4')) n++;
   return n;
+}
+
+/** Aberration の装備枠（基本1、アンロックで2） */
+export function aberrationSlots(unlocks: string[]): number {
+  return unlocks.includes('aberration_2') ? 2 : 1;
+}
+
+/** 武器1タイプあたりの Skill Gene ソケット数（基本1、アンロックで2） */
+export function weaponGeneSockets(unlocks: string[]): number {
+  return unlocks.includes('weapon_socket_2') ? 2 : 1;
 }
 
 /** アンロック済みの開始武器ID（spine は常時、他は weapon_<id> 解放で追加） */

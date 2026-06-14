@@ -24,6 +24,22 @@ export function defaultMods(): StatMods {
     lifesteal: 0,
     auraPoison: 0,
     xpMul: 1,
+    tagMul: {
+      projectile: 1,
+      orbit: 1,
+      zone: 1,
+      mine: 1,
+      chain: 1,
+      contact: 1,
+      minion: 1,
+      poison: 1,
+    },
+    targetRangeMul: 1,
+    massRadiusMul: 1,
+    noHeal: false,
+    noGemPickup: false,
+    devourXpMul: 1,
+    minionsPassive: false,
   };
 }
 
@@ -66,6 +82,8 @@ export function createPlayer(): PlayerState {
     score: 0,
     kills: 0,
     metaApplicators: [],
+    rageStacks: 0,
+    rageTimer: 0,
   };
   return p;
 }
@@ -92,7 +110,8 @@ export function recomputeMods(p: PlayerState): void {
 
 /** mass → 体格。デカいほど強そうに見え、わずかに鈍る（Agar要素） */
 export function updateBodySize(p: PlayerState): void {
-  p.radius = clamp(p.baseRadius * (1 + Math.sqrt(p.mass) * 0.045) * p.mods.shrinkMul, 10, 64);
+  const grow = 1 + Math.sqrt(p.mass) * 0.045 * p.mods.massRadiusMul;
+  p.radius = clamp(p.baseRadius * grow * p.mods.shrinkMul, 10, 64);
 }
 
 export function playerSpeed(p: PlayerState): number {
@@ -119,6 +138,7 @@ export function gainXp(state: GameState, amount: number): void {
     } else {
       state.pendingDrafts++;
     }
+    for (const fn of state.effects.onLevel) fn(state);
     audio.play('levelup');
   }
 }
@@ -143,6 +163,7 @@ export function damagePlayer(state: GameState, raw: number): boolean {
   state.camera.shake(Math.min(14, 4 + dmg * 0.35));
   state.hitStop = Math.max(state.hitStop, 0.05);
   audio.play('hurt');
+  for (const fn of state.effects.onHurt) fn(state, dmg);
   if (p.hp <= 0) {
     p.hp = 0;
     p.alive = false;
@@ -153,6 +174,7 @@ export function damagePlayer(state: GameState, raw: number): boolean {
 }
 
 export function healPlayer(p: PlayerState, amount: number): void {
+  if (p.mods.noHeal && amount > 0) return; // 断食の輪：回復を受け付けない
   p.hp = clamp(p.hp + amount, 0, p.maxHp);
 }
 
@@ -186,4 +208,11 @@ export function updatePlayerMovement(state: GameState, dt: number): void {
   p.hurtFlash = Math.max(0, p.hurtFlash - dt);
   p.dashTimer = Math.max(0, p.dashTimer - dt);
   p.skillTimer = Math.max(0, p.skillTimer - dt);
+  // 一時火力スタック（反転の殻など）の減衰
+  if (p.rageStacks > 0) {
+    p.rageTimer -= dt;
+    if (p.rageTimer <= 0) {
+      p.rageStacks = 0;
+    }
+  }
 }

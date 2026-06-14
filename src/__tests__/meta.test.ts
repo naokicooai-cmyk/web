@@ -66,7 +66,7 @@ describe('遺物（レリック）生成', () => {
 
   it('applyRelic が StatMods を正しく変える', () => {
     const relic: Relic = {
-      uid: 'r1', baseId: 'core', rarity: 2,
+      uid: 'r1', type: 'gene', baseId: 'core', rarity: 2,
       affixes: [{ id: 'hp', value: 10 }, { id: 'armor', value: 3 }],
     };
     const m = defaultMods();
@@ -116,8 +116,8 @@ describe('プロフィール由来の補正・報酬', () => {
   it('研究と装備レリックが mods に畳み込まれる', () => {
     const p = defaultProfile();
     p.research.vitality = 5;
-    p.stash = [{ uid: 'r1', baseId: 'fang', rarity: 4, affixes: [{ id: 'dmg', value: 20 }] }];
-    p.loadout = ['r1'];
+    p.stash = [{ uid: 'r1', type: 'gene', baseId: 'fang', rarity: 4, affixes: [{ id: 'dmg', value: 20 }] }];
+    p.loadout.geneMods = ['r1'];
     const apps = buildMetaApplicators(p);
     const m = defaultMods();
     for (const a of apps) a(m);

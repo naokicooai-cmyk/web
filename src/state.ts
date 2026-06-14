@@ -16,6 +16,7 @@ import type {
   Relic,
 } from './types';
 import type { ProfileData } from './systems/profile';
+import type { RunEffects } from './systems/effects';
 
 export const WORLD_W = 2000;
 export const WORLD_H = 2000;
@@ -98,6 +99,7 @@ export interface GameState {
   diffDmgMul: number;
   diffLuck: number;
   runRelics: Relic[]; // このランで拾った遺物
+  effects: RunEffects; // 装備由来の動的/トリガー効果
 
   result: ResultInfo | null;
 }

@@ -130,7 +130,9 @@
     }
     .relic-card .rc-icon { font-size: 24px; }
     .relic-card .rc-name { font-weight: 700; font-size: 12.5px; }
+    .relic-card .rc-kind { font-size: 9.5px; letter-spacing: 0.1em; opacity: 0.55; text-transform: uppercase; }
     .relic-card .rc-affixes { font-size: 11px; line-height: 1.55; opacity: 0.92; }
+    .relic-card.aberration { background: linear-gradient(180deg, rgba(40,10,18,0.92), rgba(16,18,34,0.92)); }
     .relic-card .rc-btns { display: flex; gap: 6px; margin-top: 3px; }
     .relic-card .rc-btns button {
       font-size: 11px; padding: 4px 9px; border-radius: 6px; cursor: pointer;
@@ -206,7 +208,11 @@
     <div class="meta-section-title" data-i18n="startWeaponTitle"></div>
     <div id="stash-weapons" class="meta-row"></div>
     <div class="meta-section-title" data-i18n="loadoutTitle"></div>
-    <div id="stash-loadout" class="meta-row"></div>
+    <div id="stash-genes" class="meta-row"></div>
+    <div class="meta-section-title" data-i18n="aberrTitle"></div>
+    <div id="stash-aberr" class="meta-row"></div>
+    <div class="meta-section-title" data-i18n="weaponGeneTitle"></div>
+    <div id="stash-weapongenes" class="meta-row"></div>
     <div class="meta-section-title" data-i18n="stashListTitle"></div>
     <div id="stash-list" class="meta-grid"></div>
     <button id="stash-back" class="btn" data-i18n="back"></button>

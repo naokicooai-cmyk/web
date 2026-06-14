@@ -1,15 +1,16 @@
 import { audio } from '../core/audio';
 import { circlesHit, clamp, dirTo } from '../core/vec2';
 import { ENEMIES, WORM_SEGMENTS } from '../data/enemies';
-import type { Enemy, EnemyTypeId } from '../types';
+import type { DamageTag, Enemy, EnemyTypeId } from '../types';
 import { WORLD_H, WORLD_W, type GameState } from '../state';
+import { totalDamageScale } from '../systems/effects';
 import { enemyDamageScale, enemyHpScale } from '../data/waves';
 import { spawnGem } from './gem';
 import { spawnBullet } from './bullet';
 import { damagePlayer, healPlayer } from './player';
 import { spawnBurst, spawnDamageNumber, spawnRing } from '../systems/particles';
 import { spawnPickup } from './pickup';
-import { generateRelic, rollRarity } from '../data/relics';
+import { generateDrop, rollRarity } from '../data/relics';
 import { nextRelicSeq } from '../systems/profile';
 
 const tmpDir = { x: 0, y: 0 };
@@ -17,7 +18,7 @@ const tmpDir = { x: 0, y: 0 };
 /** 指定座標に遺物ピックアップを落とす（luck が高いほど高レア） */
 function dropRelic(state: GameState, x: number, y: number, luck: number): void {
   const rarity = rollRarity(state.rng, luck);
-  const relic = generateRelic(state.rng, rarity, nextRelicSeq(state.profile));
+  const relic = generateDrop(state.rng, rarity, nextRelicSeq(state.profile));
   spawnPickup(state, x + state.rng.range(-12, 12), y + state.rng.range(-12, 12), 'relic', relic);
 }
 
@@ -77,6 +78,7 @@ export interface DamageOpts {
   poison?: number;
   leech?: number;
   silent?: boolean;
+  tag?: DamageTag; // ダメージ発生源タグ（タグ特化倍率に使用）
 }
 
 /**
@@ -92,9 +94,14 @@ export function damageEnemy(
   opts: DamageOpts = {},
 ): boolean {
   if (!e.alive) return false;
+  const m = state.player.mods;
   let dmg = rawDamage;
-  const crit = opts.crit ?? state.rng.chance(state.player.mods.critChance);
+  const crit = opts.crit ?? state.rng.chance(m.critChance);
   if (crit) dmg *= 2.2;
+  // タグ特化倍率（+X% 投射ダメージ 等）
+  if (opts.tag) dmg *= m.tagMul[opts.tag];
+  // 動的ダメージ層（mass比例・低HP比例などの装備効果）
+  dmg *= totalDamageScale(state);
   // シールド甲虫：正面からの攻撃をほぼ無効化（背後を取らせる教育役）
   if (e.behavior === 'shield') {
     dirTo(tmpDir, e.pos.x, e.pos.y, srcX, srcY);
@@ -109,12 +116,15 @@ export function damageEnemy(
     audio.play('hit');
   }
   if (opts.poison && opts.poison > 0) {
-    e.poison = Math.max(e.poison, opts.poison);
+    // 毒も「毒タグ倍率」を乗せて格納（DoTにも特化が効く）
+    e.poison = Math.max(e.poison, opts.poison * m.tagMul.poison);
     e.poisonTtl = 3;
   }
   if (opts.leech && opts.leech > 0) {
     healPlayer(state.player, dmg * opts.leech);
   }
+  for (const fn of state.effects.onHit) fn(state, e, dmg, crit);
+  if (crit) for (const fn of state.effects.onCrit) fn(state, e, dmg);
   if (e.hp <= 0) {
     killEnemy(state, e);
     return true;
@@ -130,6 +140,7 @@ export function killEnemy(state: GameState, e: Enemy, withDrops = true): void {
   audio.play('kill');
 
   if (!withDrops) return;
+  for (const fn of state.effects.onKill) fn(state, e);
   state.player.kills++;
   state.player.score += e.scoreValue;
   // ライフスティール（寄生系）
@@ -441,13 +452,19 @@ export function updateMinions(state: GameState, dt: number): void {
         target = e;
       }
     }
-    if (target) {
+    if (target && !p.mods.minionsPassive) {
       moveToward(m, target.pos.x, target.pos.y, m.speed, dt);
       if (m.stateTimer <= 0 && circlesHit(m.pos, m.radius + 4, target.pos, target.radius)) {
         m.stateTimer = 0.55;
         const dmg = (10 + p.level * 1.2) * p.mods.damageMul;
-        damageEnemy(state, target, dmg, m.pos.x, m.pos.y, { poison: p.mods.poisonOnHit });
+        damageEnemy(state, target, dmg, m.pos.x, m.pos.y, {
+          poison: p.mods.poisonOnHit,
+          tag: 'minion',
+        });
       }
+    } else if (target && p.mods.minionsPassive) {
+      // 無音の巣：攻撃せず追従だけ
+      moveToward(m, target.pos.x, target.pos.y, m.speed * 0.7, dt);
     } else {
       // 待機中はプレイヤー周囲を回る
       const ang = state.time * 2 + m.segIndex;

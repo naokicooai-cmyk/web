@@ -69,6 +69,7 @@ export function resolveCollisions(state: GameState, dt: number): void {
         if (e.alive && circlesHit(e.pos, e.radius, p.pos, p.radius + 6)) {
           damageEnemy(state, e, m.contactDamage * m.damageMul, p.pos.x, p.pos.y, {
             poison: m.poisonOnHit,
+            tag: 'contact',
           });
         }
       }
@@ -81,6 +82,7 @@ export function resolveCollisions(state: GameState, dt: number): void {
           damageEnemy(state, e, m.auraPoison * 0.45, p.pos.x, p.pos.y, {
             poison: m.auraPoison,
             silent: true,
+            tag: 'poison',
           });
         }
       }
@@ -101,6 +103,7 @@ function resolvePlayerBullet(state: GameState, b: Bullet): void {
           damageEnemy(state, e, b.damage * ZONE_TICK, b.pos.x, b.pos.y, {
             poison: b.poison,
             silent: true,
+            tag: 'zone',
           });
         }
       }
@@ -125,7 +128,7 @@ function resolvePlayerBullet(state: GameState, b: Bullet): void {
         const blast = hash.query(b.pos.x, b.pos.y, b.orbitDist);
         for (const e of blast) {
           if (e.alive && circlesHit(e.pos, e.radius, b.pos, b.orbitDist)) {
-            damageEnemy(state, e, b.damage, b.pos.x, b.pos.y, { poison: b.poison });
+            damageEnemy(state, e, b.damage, b.pos.x, b.pos.y, { poison: b.poison, tag: 'mine' });
           }
         }
       }
@@ -136,7 +139,11 @@ function resolvePlayerBullet(state: GameState, b: Bullet): void {
       const near = hash.query(b.pos.x, b.pos.y, b.radius);
       for (const e of near) {
         if (e.alive && circlesHit(e.pos, e.radius, b.pos, b.radius)) {
-          damageEnemy(state, e, b.damage, b.pos.x, b.pos.y, { poison: b.poison, leech: b.leech });
+          damageEnemy(state, e, b.damage, b.pos.x, b.pos.y, {
+            poison: b.poison,
+            leech: b.leech,
+            tag: 'orbit',
+          });
           b.hitTimer = 0.33;
           break;
         }
@@ -149,7 +156,11 @@ function resolvePlayerBullet(state: GameState, b: Bullet): void {
       for (const e of near) {
         if (!e.alive || !circlesHit(e.pos, e.radius, b.pos, b.radius)) continue;
         if (b.hitSet && b.hitSet.has(e)) continue;
-        damageEnemy(state, e, b.damage, b.pos.x, b.pos.y, { poison: b.poison, leech: b.leech });
+        damageEnemy(state, e, b.damage, b.pos.x, b.pos.y, {
+          poison: b.poison,
+          leech: b.leech,
+          tag: 'projectile',
+        });
         b.hitSet?.add(e);
       }
       break;
@@ -160,7 +171,11 @@ function resolvePlayerBullet(state: GameState, b: Bullet): void {
       const near = hash.query(b.pos.x, b.pos.y, b.radius);
       for (const e of near) {
         if (!e.alive || !circlesHit(e.pos, e.radius, b.pos, b.radius)) continue;
-        damageEnemy(state, e, b.damage, b.pos.x, b.pos.y, { poison: b.poison, leech: b.leech });
+        damageEnemy(state, e, b.damage, b.pos.x, b.pos.y, {
+          poison: b.poison,
+          leech: b.leech,
+          tag: 'projectile',
+        });
         if (b.weaponId === 'ricochet') {
           // 敵に当たるとランダム方向へ跳ねる
           const speed = Math.hypot(b.vel.x, b.vel.y);

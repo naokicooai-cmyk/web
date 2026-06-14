@@ -26,10 +26,12 @@ import { MetaScreens } from './ui/meta';
 import { DIFFICULTIES } from './data/progression';
 import {
   buildMetaApplicators,
+  buildRunEffects,
   computeRunEssence,
   loadProfile,
   saveProfile,
 } from './systems/profile';
+import { emptyEffects, tickPeriodic } from './systems/effects';
 import type { ClassId, WeaponId } from './types';
 import {
   makeBullet,
@@ -92,6 +94,7 @@ function createGameState(input: Input, camera: Camera): GameState {
     diffDmgMul: 1,
     diffLuck: 0,
     runRelics: [],
+    effects: emptyEffects(),
     result: null,
   };
   return state;
@@ -156,12 +159,15 @@ export class Game {
     s.diffDmgMul = diff.enemyDmg;
     s.diffLuck = diff.luck;
 
+    // 装備の動的/トリガー効果（gene条件付き・aberration）を構築
+    s.effects = buildRunEffects(profile);
+
     // 研究所＋装備レリックの永続補正を積んで再計算
     s.player.metaApplicators = buildMetaApplicators(profile);
     recomputeMods(s.player);
     s.player.hp = s.player.maxHp;
 
-    // 開始武器（アンロックで選んだもの。未設定/未所持は spine）
+    // 開始武器（アンロックで選んだもの。未設定/未所持は spine）。割当 Skill Gene も注入される
     const startWeapon = (profile.startWeapon || 'spine') as WeaponId;
     addWeapon(s, startWeapon);
 
@@ -216,6 +222,7 @@ export class Game {
     updatePlayerMovement(s, dt);
     updateMinions(s, dt);
     updateWeapons(s, dt);
+    tickPeriodic(s, dt);
     updateBullets(s, dt);
     updateEnemies(s, dt);
     resolveCollisions(s, dt);

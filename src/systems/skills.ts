@@ -38,15 +38,16 @@ export function tryActiveSkill(state: GameState): void {
         if (dot < cosLimit) continue;
         const dmg = (45 + p.level * 2) * p.mods.damageMul;
         if (e.hp - dmg < e.maxHp * 0.3 && e.type !== 'colossus' && e.type !== 'worm_head') {
-          // 丸呑み：ジェムを介さず直接吸収
-          gainXp(state, e.xpValue);
+          // 丸呑み：ジェムを介さず直接吸収（逆流する胃袋などで倍率）
+          gainXp(state, e.xpValue * p.mods.devourXpMul);
           p.kills++;
           p.score += e.scoreValue;
           healPlayer(p, 2);
+          for (const fn of state.effects.onDevour) fn(state, e);
           killEnemy(state, e, false);
           spawnBurst(state, e.pos.x, e.pos.y, '#ff8c5a', 6, 220);
         } else {
-          damageEnemy(state, e, dmg, p.pos.x, p.pos.y, { poison: p.mods.poisonOnHit });
+          damageEnemy(state, e, dmg, p.pos.x, p.pos.y, { poison: p.mods.poisonOnHit, tag: 'contact' });
           // 吸引
           e.pos.x -= dx * 0.45;
           e.pos.y -= dy * 0.45;

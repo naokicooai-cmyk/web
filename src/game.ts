@@ -22,7 +22,15 @@ import { tryActiveSkill } from './systems/skills';
 import { addWeapon, updateWeapons } from './systems/weaponSystem';
 import { updateWaveDirector } from './systems/waveDirector';
 import { UIOverlays } from './ui/overlays';
-import type { ClassId } from './types';
+import { MetaScreens } from './ui/meta';
+import { DIFFICULTIES } from './data/progression';
+import {
+  buildMetaApplicators,
+  computeRunEssence,
+  loadProfile,
+  saveProfile,
+} from './systems/profile';
+import type { ClassId, WeaponId } from './types';
 import {
   makeBullet,
   makeEnemy,
@@ -78,6 +86,12 @@ function createGameState(input: Input, camera: Camera): GameState {
     pendingDrafts: 0,
     pendingEvolution: false,
     lastDamageCause: 'deathByEnemy',
+    profile: loadProfile(),
+    difficultyIndex: 0,
+    diffHpMul: 1,
+    diffDmgMul: 1,
+    diffLuck: 0,
+    runRelics: [],
     result: null,
   };
   return state;
@@ -88,9 +102,11 @@ export class Game {
   readonly input = new Input();
   readonly camera = new Camera();
   readonly ui = new UIOverlays();
+  readonly meta = new MetaScreens();
   private ctx: CanvasRenderingContext2D;
   private currentDraft: DraftCard[] = [];
   private deathTimer = 0;
+  private selectedDifficulty = 0;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
@@ -99,11 +115,16 @@ export class Game {
     this.state.mode = 'title';
 
     this.ui.init();
-    this.ui.onPlay = () => this.startRun();
-    this.ui.onRetry = () => this.startRun();
+    this.ui.onPlay = (diff) => this.startRun(diff);
+    this.ui.onRetry = () => this.startRun(this.selectedDifficulty);
     this.ui.onToTitle = () => this.toTitle();
     this.ui.onCardPick = (i) => this.pickCard(i);
     this.ui.onEvolvePick = (id) => this.pickEvolution(id);
+    this.ui.onOpenLab = () => this.meta.openLab();
+    this.ui.onOpenStash = () => this.meta.openStash();
+
+    this.meta.init();
+    this.meta.onClose = () => this.toTitle();
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
@@ -120,16 +141,36 @@ export class Game {
     this.ui.showTitle();
   }
 
-  startRun(): void {
+  startRun(difficultyIndex = 0): void {
+    const profile = loadProfile();
     this.state = createGameState(this.input, this.camera);
-    // 初期武器：最寄りの敵を自動で撃つスパインショット
-    addWeapon(this.state, 'spine');
-    this.camera.x = this.state.player.pos.x;
-    this.camera.y = this.state.player.pos.y;
+    const s = this.state;
+    s.profile = profile;
+
+    // 難易度（アセンション）を適用
+    const di = Math.max(0, Math.min(DIFFICULTIES.length - 1, difficultyIndex));
+    const diff = DIFFICULTIES[di];
+    this.selectedDifficulty = di;
+    s.difficultyIndex = di;
+    s.diffHpMul = diff.enemyHp;
+    s.diffDmgMul = diff.enemyDmg;
+    s.diffLuck = diff.luck;
+
+    // 研究所＋装備レリックの永続補正を積んで再計算
+    s.player.metaApplicators = buildMetaApplicators(profile);
+    recomputeMods(s.player);
+    s.player.hp = s.player.maxHp;
+
+    // 開始武器（アンロックで選んだもの。未設定/未所持は spine）
+    const startWeapon = (profile.startWeapon || 'spine') as WeaponId;
+    addWeapon(s, startWeapon);
+
+    this.camera.x = s.player.pos.x;
+    this.camera.y = s.player.pos.y;
     this.deathTimer = 0;
     this.input.consumeSkill();
     this.ui.hideAll();
-    this.state.mode = 'playing';
+    s.mode = 'playing';
   }
 
   update(dt: number): void {
@@ -266,6 +307,24 @@ export class Game {
       classId: p.classId,
       date: new Date().toISOString().slice(0, 10),
     });
+
+    // ---- メタ報酬：エッセンス付与＋難易度解放（遺物はpickup時に保存済み）----
+    const profile = s.profile;
+    const essence = computeRunEssence(
+      profile,
+      { score: p.score, kills: p.kills, level: p.level, survived },
+      s.difficultyIndex,
+    );
+    profile.essence += essence;
+    let unlockedNext = false;
+    if (survived) {
+      const prev = profile.difficultyCleared;
+      const next = Math.min(DIFFICULTIES.length - 1, Math.max(prev, s.difficultyIndex + 1));
+      profile.difficultyCleared = next;
+      unlockedNext = next > prev;
+    }
+    saveProfile(profile);
+
     s.result = {
       survived,
       causeKey: survived ? '' : s.lastDamageCause,
@@ -275,6 +334,10 @@ export class Game {
       level: p.level,
       classId: p.classId,
       newRecord: saved.newRecord,
+      essence,
+      relicsFound: s.runRelics,
+      difficultyIndex: s.difficultyIndex,
+      unlockedNextDifficulty: unlockedNext,
     };
     s.mode = 'result';
     this.ui.showResult(s.result);

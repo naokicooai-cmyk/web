@@ -125,10 +125,24 @@ export interface Gem extends Entity {
   ttl: number;
 }
 
-export type PickupKind = 'heal' | 'magnet' | 'bomb' | 'chest';
+export type PickupKind = 'heal' | 'magnet' | 'bomb' | 'chest' | 'relic';
 
 export interface PickupItem extends Entity {
   kind: PickupKind;
+  relic: Relic | null; // kind==='relic' のとき中身
+}
+
+/** ハクスラ装備（遺物）。出撃前にロードアウトへ装着して持ち込む */
+export interface AffixRoll {
+  id: string; // AFFIXES のキー
+  value: number; // ロール済みの値
+}
+
+export interface Relic {
+  uid: string; // 一意ID
+  baseId: string; // 見た目（アイコン・名前テーマ）
+  rarity: number; // 0:コモン 〜 4:レジェンダリ
+  affixes: AffixRoll[];
 }
 
 export interface Particle extends Entity {
@@ -176,6 +190,8 @@ export interface PlayerState extends Entity {
   radialTimer: number; // ヘルストーム全方位弾のtick
   score: number;
   kills: number;
+  /** 研究所＋装備レリックからの永続補正（recomputeMods で毎回適用） */
+  metaApplicators: ((m: StatMods) => void)[];
 }
 
 export interface BotState extends Entity {

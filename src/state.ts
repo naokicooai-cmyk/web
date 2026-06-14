@@ -13,7 +13,9 @@ import type {
   PickupItem,
   PlayerState,
   BotState,
+  Relic,
 } from './types';
+import type { ProfileData } from './systems/profile';
 
 export const WORLD_W = 2000;
 export const WORLD_H = 2000;
@@ -36,6 +38,10 @@ export interface ResultInfo {
   level: number;
   classId: string;
   newRecord: boolean;
+  essence: number; // このランで得たエッセンス
+  relicsFound: Relic[]; // このランで拾った遺物
+  difficultyIndex: number;
+  unlockedNextDifficulty: boolean; // 次の難易度を解放したか
 }
 
 export interface GameState {
@@ -84,6 +90,14 @@ export interface GameState {
 
   /** 直近の被ダメージ源（死因表示用 i18n キー） */
   lastDamageCause: string;
+
+  // メタ進行（出撃時に startRun が設定）
+  profile: ProfileData; // ランの作業用プロフィール（localStorageが真の値）
+  difficultyIndex: number;
+  diffHpMul: number;
+  diffDmgMul: number;
+  diffLuck: number;
+  runRelics: Relic[]; // このランで拾った遺物
 
   result: ResultInfo | null;
 }
@@ -154,7 +168,7 @@ export function makeParticle(): Particle {
 }
 
 export function makePickup(): PickupItem {
-  return { ...makeEntity(), kind: 'heal' };
+  return { ...makeEntity(), kind: 'heal', relic: null };
 }
 
 export function announce(state: GameState, text: string, big = false, ttl = 3): void {

@@ -14,7 +14,8 @@ HTML5 Canvas + TypeScript 製。10分間、モンスターの大群を喰らい�
 - 敵を倒す → ジェムを拾う → レベルアップ → 3択ドラフト → **Lv10/20/30 で進化分岐**
 - 5:00 にマザーワーム、8:30 から喰らい霧が収縮、9:40 にザ・コロッサス出現
 - 2:30 に登場する捕食者 **VORE** を倒すと保有XPの70%が爆散するジャックポット
-- 武器・パッシブ・進化・スキルの詳細データは **[GUIDE.md](./GUIDE.md)** を参照
+- **メタ進行（ハクスラ＋永続強化）**: ランで **エッセンス💰** を稼ぎ、タイトルの **研究所**（ステ永久強化・アンロック）と **倉庫**（遺物の装備=ロードアウト）で成長。敵は **遺物（ランダムなレアリティ＋アフィックス）** をドロップ。**難易度（アセンション）** は生存達成で解放され、周回で強くなる
+- 武器・パッシブ・進化・スキル・メタ進行の詳細データは **[GUIDE.md](./GUIDE.md)** を参照
 - UI は日本語 / English 切替対応（タイトル画面）
 
 ## 開発 / Development
@@ -52,15 +53,17 @@ src/
 ├── main.ts            エントリ：RAF + 固定ステップループ
 ├── game.ts            状態機械 (Title / Playing / LevelUp / Evolution / Result)
 ├── core/              vec2 / rng(シード可) / pool / spatialHash / camera / input / audio
-├── data/              武器・パッシブ・クラス進化ツリー・敵・Wave・i18n（純データ）
+├── data/              武器・パッシブ・クラス進化ツリー・敵・Wave・i18n /
+│                      relics(遺物・アフィックス) / progression(研究・解放・難易度)（純データ）
 ├── entities/          player / enemy(AI) / bullet / gem / pickup / bot(疑似PvP)
 ├── systems/           weaponSystem / collision / waveDirector / fog / levelUp(3択) /
-│                      skills / particles / juice / meta(ローカルランキング)
+│                      skills / particles / meta(ランキング) / profile(メタ進行の永続化)
 ├── render/            renderer / shapes / hud(ミニマップ含む)
-└── ui/                DOMオーバーレイ（タイトル / 3択 / 進化 / リザルト）
+└── ui/                DOMオーバーレイ（タイトル / 3択 / 進化 / リザルト / 研究所 / 倉庫）
 ```
 
 バランス調整は `src/data/` の数値を書き換えるだけで完結する（コード変更不要）。
+メタ進行（エッセンス・研究・遺物・難易度）は localStorage に永続化される。
 
 ## 設計ドキュメント
 

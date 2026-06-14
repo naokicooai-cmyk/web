@@ -1,32 +1,50 @@
 import { audio } from '../core/audio';
 import { CLASSES } from '../data/classes';
 import { getLang, setLang, t, type Lang } from '../data/i18n';
-import type { ClassId } from '../types';
+import { DIFFICULTIES } from '../data/progression';
+import { relicIcon, relicRarity } from '../data/relics';
+import type { ClassId, Relic } from '../types';
 import type { ResultInfo } from '../state';
 import type { DraftCard } from '../systems/levelUp';
 import { loadRanking } from '../systems/meta';
+import { loadProfile, maxSelectableDifficulty } from '../systems/profile';
 
 function el<T extends HTMLElement>(id: string): T {
   return document.getElementById(id) as T;
 }
 
 export class UIOverlays {
-  onPlay: () => void = () => {};
+  onPlay: (difficulty: number) => void = () => {};
   onCardPick: (index: number) => void = () => {};
   onEvolvePick: (id: ClassId) => void = () => {};
   onRetry: () => void = () => {};
   onToTitle: () => void = () => {};
+  onOpenLab: () => void = () => {};
+  onOpenStash: () => void = () => {};
 
   private currentCards: DraftCard[] = [];
   private currentEvolutions: ClassId[] = [];
   private retryTimer: number | null = null;
+  private diffIndex = 0;
 
   init(): void {
     el('play-btn').addEventListener('click', () => {
       audio.unlock();
       audio.play('select');
-      this.onPlay();
+      this.onPlay(this.diffIndex);
     });
+    el('lab-btn').addEventListener('click', () => {
+      audio.play('select');
+      el('title-screen').classList.add('hidden');
+      this.onOpenLab();
+    });
+    el('stash-btn').addEventListener('click', () => {
+      audio.play('select');
+      el('title-screen').classList.add('hidden');
+      this.onOpenStash();
+    });
+    el('diff-prev').addEventListener('click', () => this.changeDiff(-1));
+    el('diff-next').addEventListener('click', () => this.changeDiff(1));
     el('retry-btn').addEventListener('click', () => {
       if ((el('retry-btn') as HTMLButtonElement).disabled) return;
       audio.play('select');
@@ -75,6 +93,34 @@ export class UIOverlays {
     el('lang-ja').classList.toggle('active', getLang() === 'ja');
     el('lang-en').classList.toggle('active', getLang() === 'en');
     this.renderRanking();
+    this.refreshTitleMeta();
+  }
+
+  /** タイトルのエッセンス残高と難易度セレクタを最新化 */
+  private refreshTitleMeta(): void {
+    const profile = loadProfile();
+    el('essence-amount').textContent = String(Math.floor(profile.essence));
+    const max = maxSelectableDifficulty(profile);
+    this.diffIndex = Math.max(0, Math.min(max, this.diffIndex));
+    this.updateDiffLabel(max);
+  }
+
+  private updateDiffLabel(max: number): void {
+    const diff = DIFFICULTIES[this.diffIndex];
+    const label = el('diff-label');
+    label.textContent = `${t('difficulty')}: ${t(diff.nameKey)}`;
+    label.style.color = diff.color;
+    (el('diff-prev') as HTMLButtonElement).disabled = this.diffIndex <= 0;
+    (el('diff-next') as HTMLButtonElement).disabled = this.diffIndex >= max;
+  }
+
+  private changeDiff(dir: number): void {
+    const max = maxSelectableDifficulty(loadProfile());
+    const next = Math.max(0, Math.min(max, this.diffIndex + dir));
+    if (next === this.diffIndex) return;
+    this.diffIndex = next;
+    audio.play('select');
+    this.updateDiffLabel(max);
   }
 
   private renderRanking(): void {
@@ -101,7 +147,14 @@ export class UIOverlays {
   }
 
   hideAll(): void {
-    for (const id of ['title-screen', 'levelup-screen', 'evolution-screen', 'result-screen']) {
+    for (const id of [
+      'title-screen',
+      'levelup-screen',
+      'evolution-screen',
+      'result-screen',
+      'lab-screen',
+      'stash-screen',
+    ]) {
       el(id).classList.add('hidden');
     }
     if (this.retryTimer !== null) {
@@ -166,6 +219,10 @@ export class UIOverlays {
     el('evolution-screen').classList.remove('hidden');
   }
 
+  private relicTitle(r: Relic): string {
+    return `${t(`rarity.${relicRarity(r).key}`)} ${t(`relic.${r.baseId}`)}`;
+  }
+
   showResult(info: ResultInfo): void {
     this.hideAll();
     el('result-title').textContent = info.survived ? t('resultSurvived') : t('resultDead');
@@ -174,16 +231,39 @@ export class UIOverlays {
 
     const mm = Math.floor(info.time / 60);
     const ss = String(Math.floor(info.time % 60)).padStart(2, '0');
+    const diff = DIFFICULTIES[info.difficultyIndex] ?? DIFFICULTIES[0];
     const rows: [string, string][] = [
+      [t('statDifficulty'), t(diff.nameKey)],
       [t('statScore'), String(info.score)],
       [t('statTime'), `${mm}:${ss}`],
       [t('statKills'), String(info.kills)],
       [t('statLevel'), `Lv ${info.level}`],
       [t('statClass'), t(`class.${info.classId}.name`)],
+      [t('resultEssence'), `+${info.essence} 💰`],
     ];
     el('result-stats').innerHTML =
       rows.map(([k, v]) => `<div class="stat-row"><span>${k}</span><span>${v}</span></div>`).join('') +
       (info.newRecord ? `<div class="stat-row" style="color:#ffd24d">${t('newRecord')}</div>` : '');
+
+    // 難易度解放バナー
+    el('result-unlock').textContent = info.unlockedNextDifficulty ? t('diffCleared') : '';
+
+    // 発見した遺物
+    const relicsBox = el('result-relics');
+    if (info.relicsFound.length > 0) {
+      relicsBox.innerHTML =
+        `<div class="meta-section-title">${t('resultRelics')} ×${info.relicsFound.length}</div>` +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">' +
+        info.relicsFound
+          .map(
+            (r) =>
+              `<span class="res-relic" title="${this.relicTitle(r)}" style="filter:drop-shadow(0 0 6px ${relicRarity(r).color})">${relicIcon(r)}</span>`,
+          )
+          .join('') +
+        '</div>';
+    } else {
+      relicsBox.innerHTML = '';
+    }
 
     // 3秒で再出撃（離脱の意思決定をさせる隙を与えない）
     const btn = el<HTMLButtonElement>('retry-btn');

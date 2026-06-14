@@ -96,6 +96,64 @@
     #result-title { font-size: 38px; font-weight: 900; letter-spacing: 0.1em; }
     .row { display: flex; gap: 10px; align-items: center; }
     #title-footer { font-size: 11px; opacity: 0.5; }
+    /* メタ進行（エッセンス / 難易度 / 研究所 / 倉庫） */
+    #essence-bar { font-size: 18px; font-weight: 700; color: var(--gold); letter-spacing: 0.04em; }
+    #diff-label { min-width: 180px; text-align: center; font-size: 18px; font-weight: 800; letter-spacing: 0.06em; }
+    .meta-overlay { justify-content: flex-start; align-items: center; gap: 12px; padding: 26px 16px; overflow-y: auto; }
+    .meta-essence { font-size: 17px; font-weight: 700; color: var(--gold); }
+    .meta-section-title {
+      font-size: 13px; letter-spacing: 0.12em; color: var(--accent); font-weight: 700;
+      margin-top: 8px; text-transform: uppercase;
+    }
+    .meta-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: min(94vw, 920px); }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: min(94vw, 920px); }
+    .meta-card {
+      width: 150px; padding: 10px 12px; border-radius: 11px; background: var(--panel);
+      border: 1px solid #2a3055; display: flex; flex-direction: column; gap: 5px; text-align: center;
+      align-items: center;
+    }
+    .meta-card .mc-icon { font-size: 26px; }
+    .meta-card .mc-name { font-weight: 700; font-size: 13px; }
+    .meta-card .mc-desc { font-size: 11px; opacity: 0.8; line-height: 1.4; }
+    .meta-card .mc-lvl { font-size: 11px; color: var(--accent2); }
+    .meta-card .mc-buy {
+      margin-top: 2px; font-size: 12px; padding: 5px 12px; border-radius: 7px; cursor: pointer;
+      border: 1px solid var(--gold); background: rgba(255,210,77,0.1); color: var(--gold); font-weight: 700;
+    }
+    .meta-card .mc-buy:disabled { border-color: #4a4f6a; background: transparent; color: #6a7090; cursor: default; }
+    .meta-card.owned { border-color: #3a6a4a; }
+    /* 遺物カード */
+    .relic-card {
+      width: 158px; padding: 9px 10px; border-radius: 11px; background: var(--panel);
+      border: 2px solid #2a3055; display: flex; flex-direction: column; gap: 4px; text-align: center;
+      align-items: center;
+    }
+    .relic-card .rc-icon { font-size: 24px; }
+    .relic-card .rc-name { font-weight: 700; font-size: 12.5px; }
+    .relic-card .rc-affixes { font-size: 11px; line-height: 1.55; opacity: 0.92; }
+    .relic-card .rc-btns { display: flex; gap: 6px; margin-top: 3px; }
+    .relic-card .rc-btns button {
+      font-size: 11px; padding: 4px 9px; border-radius: 6px; cursor: pointer;
+      border: 1px solid #5a6080; background: transparent; color: var(--text);
+    }
+    .relic-card .rc-btns button:hover { border-color: var(--accent); color: var(--accent); }
+    .relic-card .rc-btns button.equipped { border-color: var(--accent); color: var(--accent); background: rgba(125,249,255,0.12); }
+    .slot-card {
+      width: 130px; min-height: 96px; padding: 8px; border-radius: 11px;
+      border: 2px dashed #3a4060; background: rgba(10,14,30,0.5);
+      display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center;
+      text-align: center; cursor: pointer;
+    }
+    .slot-card.filled { border-style: solid; cursor: pointer; }
+    .slot-card .sc-empty { font-size: 11px; opacity: 0.6; }
+    .wpn-chip {
+      padding: 8px 14px; border-radius: 9px; border: 1px solid #3a4060; background: var(--panel);
+      cursor: pointer; font-size: 13px; display: flex; gap: 6px; align-items: center;
+    }
+    .wpn-chip.selected { border-color: var(--accent); color: var(--accent); background: rgba(125,249,255,0.1); }
+    #result-relics { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: min(92vw, 560px); }
+    #result-relics .res-relic { font-size: 22px; }
+    .unlock-banner { color: var(--gold); font-weight: 800; font-size: 16px; }
     @media (max-width: 640px) {
       .card { width: 150px; min-height: 170px; }
       .card .icon { font-size: 30px; }
@@ -113,13 +171,45 @@
       <button id="lang-en" class="btn-small">English</button>
       <button id="mute-btn" class="btn-small">🔊</button>
     </div>
+    <div id="essence-bar">💰 <span id="essence-amount">0</span> <span data-i18n="essence"></span></div>
+    <div class="row" id="difficulty-row">
+      <button id="diff-prev" class="btn-small">◀</button>
+      <div id="diff-label"></div>
+      <button id="diff-next" class="btn-small">▶</button>
+    </div>
     <button id="play-btn" class="btn" data-i18n="play"></button>
+    <div class="row">
+      <button id="lab-btn" class="btn-small" data-i18n="labTitle"></button>
+      <button id="stash-btn" class="btn-small" data-i18n="stashTitle"></button>
+    </div>
     <div class="help" id="title-help"></div>
     <div class="panel">
       <h3 data-i18n="ranking"></h3>
       <div id="ranking-list"></div>
     </div>
     <div id="title-footer">EVOLVORE — devour, evolve, dominate.</div>
+  </div>
+
+  <div id="lab-screen" class="overlay hidden meta-overlay">
+    <div class="modal-title" data-i18n="labTitle"></div>
+    <div class="meta-essence">💰 <span id="lab-essence">0</span> <span data-i18n="essence"></span></div>
+    <div class="meta-section-title" data-i18n="researchTitle"></div>
+    <div id="lab-research" class="meta-grid"></div>
+    <div class="meta-section-title" data-i18n="unlockTitle"></div>
+    <div id="lab-unlocks" class="meta-grid"></div>
+    <button id="lab-back" class="btn" data-i18n="back"></button>
+  </div>
+
+  <div id="stash-screen" class="overlay hidden meta-overlay">
+    <div class="modal-title" data-i18n="stashTitle"></div>
+    <div class="meta-essence">💰 <span id="stash-essence">0</span> <span data-i18n="essence"></span></div>
+    <div class="meta-section-title" data-i18n="startWeaponTitle"></div>
+    <div id="stash-weapons" class="meta-row"></div>
+    <div class="meta-section-title" data-i18n="loadoutTitle"></div>
+    <div id="stash-loadout" class="meta-row"></div>
+    <div class="meta-section-title" data-i18n="stashListTitle"></div>
+    <div id="stash-list" class="meta-grid"></div>
+    <button id="stash-back" class="btn" data-i18n="back"></button>
   </div>
 
   <div id="levelup-screen" class="overlay hidden">
@@ -136,6 +226,8 @@
     <div id="result-title"></div>
     <div id="death-cause"></div>
     <div class="panel"><div id="result-stats"></div></div>
+    <div id="result-unlock" class="unlock-banner"></div>
+    <div id="result-relics"></div>
     <button id="retry-btn" class="btn"></button>
     <button id="to-title-btn" class="btn-small" data-i18n="backToTitle"></button>
   </div>

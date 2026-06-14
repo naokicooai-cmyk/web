@@ -9,14 +9,23 @@ import { spawnBullet } from './bullet';
 import { damagePlayer, healPlayer } from './player';
 import { spawnBurst, spawnDamageNumber, spawnRing } from '../systems/particles';
 import { spawnPickup } from './pickup';
+import { generateRelic, rollRarity } from '../data/relics';
+import { nextRelicSeq } from '../systems/profile';
 
 const tmpDir = { x: 0, y: 0 };
+
+/** 指定座標に遺物ピックアップを落とす（luck が高いほど高レア） */
+function dropRelic(state: GameState, x: number, y: number, luck: number): void {
+  const rarity = rollRarity(state.rng, luck);
+  const relic = generateRelic(state.rng, rarity, nextRelicSeq(state.profile));
+  spawnPickup(state, x + state.rng.range(-12, 12), y + state.rng.range(-12, 12), 'relic', relic);
+}
 
 export function spawnEnemy(state: GameState, type: EnemyTypeId, x: number, y: number): Enemy {
   const def = ENEMIES[type];
   const e = state.enemyPool.obtain();
-  const hpMul = type === 'minion' ? 1 : enemyHpScale(state.time);
-  const dmgMul = type === 'minion' ? 1 : enemyDamageScale(state.time);
+  const hpMul = type === 'minion' ? 1 : enemyHpScale(state.time) * state.diffHpMul;
+  const dmgMul = type === 'minion' ? 1 : enemyDamageScale(state.time) * state.diffDmgMul;
   e.pos.x = clamp(x, 20, WORLD_W - 20);
   e.pos.y = clamp(y, 20, WORLD_H - 20);
   e.vel.x = 0;
@@ -133,6 +142,10 @@ export function killEnemy(state: GameState, e: Enemy, withDrops = true): void {
     const per = Math.max(1, Math.round(e.xpValue / pieces));
     for (let i = 0; i < pieces; i++) spawnGem(state, e.pos.x, e.pos.y, per);
   }
+  // ハクスラ：通常敵もごく低確率で遺物を落とす
+  if (e.type !== 'worm_body' && state.rng.chance(0.006 * (1 + state.diffLuck))) {
+    dropRelic(state, e.pos.x, e.pos.y, 0.2 + state.diffLuck);
+  }
   switch (e.type) {
     case 'ameba':
       // 分裂アメーバ：倒すと2体に
@@ -142,6 +155,7 @@ export function killEnemy(state: GameState, e: Enemy, withDrops = true): void {
       break;
     case 'elite':
       spawnPickup(state, e.pos.x, e.pos.y, 'chest');
+      if (state.rng.chance(0.55)) dropRelic(state, e.pos.x, e.pos.y, 0.5 + state.diffLuck);
       state.hitStop = Math.max(state.hitStop, 0.12);
       state.camera.shake(10);
       break;
@@ -158,6 +172,8 @@ export function killEnemy(state: GameState, e: Enemy, withDrops = true): void {
         }
       }
       state.wormChain = [];
+      // ボス確定ドロップ
+      dropRelic(state, e.pos.x, e.pos.y, 1.2 + state.diffLuck);
       break;
     case 'colossus':
       state.hitStop = Math.max(state.hitStop, 0.25);
@@ -165,6 +181,9 @@ export function killEnemy(state: GameState, e: Enemy, withDrops = true): void {
       audio.play('explosion');
       spawnRing(state, e.pos.x, e.pos.y, '#c47dff', 200);
       spawnBurst(state, e.pos.x, e.pos.y, '#c47dff', 40, 350, 5, 0.9);
+      // 最終ボス：高レア確定で複数ドロップ
+      dropRelic(state, e.pos.x, e.pos.y, 2.0 + state.diffLuck);
+      dropRelic(state, e.pos.x, e.pos.y, 1.5 + state.diffLuck);
       break;
     default:
       break;

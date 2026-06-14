@@ -1,5 +1,6 @@
 import { CLASSES } from '../data/classes';
 import { FOG_START } from '../data/waves';
+import { relicIcon, relicRarity } from '../data/relics';
 import { WORLD_H, WORLD_W, type GameState } from '../state';
 import { drawCreature, drawGlow, getEnemySprite, rgba } from './shapes';
 
@@ -295,6 +296,7 @@ const PICKUP_ICONS: Record<string, string> = {
   magnet: '🧲',
   bomb: '💣',
   chest: '🎁',
+  relic: '🔮',
 };
 
 function drawPickups(state: GameState, ctx: CanvasRenderingContext2D): void {
@@ -306,19 +308,24 @@ function drawPickups(state: GameState, ctx: CanvasRenderingContext2D): void {
     if (!item.alive || !cam.isVisible(item.pos.x, item.pos.y, 28)) continue;
     const x = cam.toScreenX(item.pos.x);
     const y = cam.toScreenY(item.pos.y) + Math.sin(item.vel.x) * 5;
-    drawGlow(ctx, x, y, 30, '#ffd24d', 0.5 + Math.sin(state.time * 4) * 0.15);
-    ctx.fillStyle = 'rgba(255, 210, 77, 0.14)';
+    // 遺物はレアリティ色で強く光らせ、専用アイコンを出す
+    const relic = item.relic;
+    const color = relic ? relicRarity(relic).color : '#ffd24d';
+    const icon = relic ? relicIcon(relic) : PICKUP_ICONS[item.kind];
+    const pulse = relic ? 0.7 + Math.sin(state.time * 5) * 0.25 : 0.5 + Math.sin(state.time * 4) * 0.15;
+    drawGlow(ctx, x, y, relic ? 44 : 30, color, pulse);
+    ctx.fillStyle = rgba(color, 0.16);
     ctx.beginPath();
-    ctx.arc(x, y, 16, 0, Math.PI * 2);
+    ctx.arc(x, y, relic ? 18 : 16, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 210, 77, 0.8)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = rgba(color, 0.85);
+    ctx.lineWidth = relic ? 2.5 : 2;
     ctx.setLineDash([5, 4]);
     ctx.beginPath();
-    ctx.arc(x, y, 17, state.time * 1.5, state.time * 1.5 + Math.PI * 2);
+    ctx.arc(x, y, relic ? 19 : 17, state.time * 1.5, state.time * 1.5 + Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillText(PICKUP_ICONS[item.kind], x, y + 1);
+    ctx.fillText(icon, x, y + 1);
   }
 }
 

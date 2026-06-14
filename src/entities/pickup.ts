@@ -1,21 +1,30 @@
 import { audio } from '../core/audio';
 import { circlesHit } from '../core/vec2';
 import { t } from '../data/i18n';
-import type { PickupKind } from '../types';
+import type { PickupKind, Relic } from '../types';
 import { announce, type GameState } from '../state';
 import { magnetAllGems } from './gem';
 import { damageEnemy } from './enemy';
 import { healPlayer } from './player';
 import { spawnRing } from '../systems/particles';
+import { addRelic } from '../systems/profile';
+import { relicRarity } from '../data/relics';
 
-export function spawnPickup(state: GameState, x: number, y: number, kind: PickupKind): void {
+export function spawnPickup(
+  state: GameState,
+  x: number,
+  y: number,
+  kind: PickupKind,
+  relic: Relic | null = null,
+): void {
   const item = state.pickupPool.obtain();
   item.pos.x = x;
   item.pos.y = y;
   item.vel.x = state.rng.range(0, Math.PI * 2); // 浮遊アニメの位相として使う
   item.vel.y = 0;
-  item.radius = 14;
+  item.radius = relic ? 17 : 14;
   item.kind = kind;
+  item.relic = relic;
   item.alive = true;
   state.pickups.push(item);
 }
@@ -51,6 +60,17 @@ export function updatePickups(state: GameState, dt: number): void {
         // エリートの宝箱＝無料ドラフト1回
         state.pendingDrafts++;
         announce(state, t('eliteDown'));
+        break;
+      case 'relic':
+        if (item.relic) {
+          // 拾った遺物は即倉庫へ（シングルでは死んでも失わない）
+          addRelic(state.profile, item.relic);
+          state.runRelics.push(item.relic);
+          const rar = relicRarity(item.relic);
+          spawnRing(state, item.pos.x, item.pos.y, rar.color, 70);
+          announce(state, t('relicFound', { r: t(`rarity.${rar.key}`) }));
+          audio.play('evolve');
+        }
         break;
     }
   }

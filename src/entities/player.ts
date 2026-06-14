@@ -65,6 +65,7 @@ export function createPlayer(): PlayerState {
     radialTimer: 0,
     score: 0,
     kills: 0,
+    metaApplicators: [],
   };
   return p;
 }
@@ -77,6 +78,8 @@ export function recomputeMods(p: PlayerState): void {
   for (const [id, level] of Object.entries(p.passives) as [PassiveId, number][]) {
     PASSIVES[id].apply(m, level);
   }
+  // 研究所＋装備レリックの永続補正（出撃時に startRun が積む）
+  for (const app of p.metaApplicators) app(m);
   p.mods = m;
   p.maxHp = Math.round(BASE_HP * m.maxHpMul * (1 + (p.level - 1) * 0.03));
   if (p.maxHp !== prevMaxHp && prevMaxHp > 0) {
